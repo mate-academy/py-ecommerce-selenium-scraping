@@ -20,7 +20,7 @@ def test_random_pages_csv_file_is_created(page):
     assert os.path.exists(f"{page}.csv")
 
 
-@pytest.mark.parametrize("page", ["laptops", "tablets.csv", "touch"])
+@pytest.mark.parametrize("page", ["laptops", "tablets", "touch"])
 def test_static_products_are_correct(page):
     with open(TEST_DIR / f"correct_{page}.csv", "r") as correct_file, open(f"{page}.csv", "r") as result_file:
         correct_reader = csv.reader(correct_file)
