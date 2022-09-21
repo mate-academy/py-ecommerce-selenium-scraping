@@ -1,2 +1,13 @@
 pytest==6.2.5
 flake8==4.0.1
+py~=1.11.0
+colorama~=0.4.5
+pip~=22.0.4
+attrs~=22.1.0
+toml~=0.10.2
+pyflakes~=2.4.0
+pluggy~=1.0.0
+iniconfig~=1.1.1
+atomicwrites~=1.4.1
+pyparsing~=3.0.9
+setuptools~=58.1.0
