@@ -1,8 +1,10 @@
 import csv
+import time
 
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
+from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -39,28 +41,34 @@ def create_file(data: list, file_name: str):
 def parce_single_page(link: str, file_name: str):
     driver = webdriver.Chrome(service=s)
     driver.get(link)
+    products_info = []
     cookies = driver.find_element(By.CLASS_NAME, "acceptCookies")
     if cookies.is_displayed():
         cookies.click()
-    button_more = driver.find_element(By.CSS_SELECTOR, "ecomerce-items-scroll-more")
-    products = driver.find_elements(By.CSS_SELECTOR, "div.col-sm-4")
-    products_info = []
-    if button_more.is_displayed():
-        button_more.click()
+    try:
+        button_more = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+    except NoSuchElementException:
+        pass
+    else:
+        while button_more.is_displayed():
+            button_more.click()
+            time.sleep(0.5)
+    finally:
+        products = driver.find_elements(By.CSS_SELECTOR, "div.col-sm-4")
 
-    for product in products:
-        title = product.find_element(By.CLASS_NAME, "title").get_attribute("title")
-        description = product.find_element(By.CSS_SELECTOR, ".description").text
-        price = float(product.find_element(By.CLASS_NAME, "price").text.replace("$", ""))
-        rating = int(len(product.find_elements(By.CLASS_NAME, "glyphicon-star")))
-        num_of_reviews = int(product.find_element(By.CSS_SELECTOR, ".ratings .pull-right").text.split()[0])
+        for product in products:
+            title = product.find_element(By.CLASS_NAME, "title").get_attribute("title")
+            description = product.find_element(By.CLASS_NAME, "description").text.replace("\xa0i", "")
+            price = float(product.find_element(By.CLASS_NAME, "price").text.replace("$", ""))
+            rating = int(len(product.find_elements(By.CLASS_NAME, "glyphicon-star")))
+            num_of_reviews = int(product.find_element(By.CSS_SELECTOR, ".ratings .pull-right").text.split()[0])
 
-        product_data = [title, description, price, rating, num_of_reviews]
+            product_data = [title, description, price, rating, num_of_reviews]
 
-        products_info.append(product_data)
+            products_info.append(product_data)
 
-    driver.close()
-    create_file(products_info, file_name)
+        driver.close()
+        create_file(products_info, file_name)
 
 
 def get_all_products():
