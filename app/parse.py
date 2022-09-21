@@ -58,7 +58,7 @@ def parce_single_page(link: str, file_name: str):
 
         for product in products:
             title = product.find_element(By.CLASS_NAME, "title").get_attribute("title")
-            description = product.find_element(By.CLASS_NAME, "description").text.replace("\xa0i", "")
+            description = product.find_element(By.CLASS_NAME, "description").text
             price = float(product.find_element(By.CLASS_NAME, "price").text.replace("$", ""))
             rating = int(len(product.find_elements(By.CLASS_NAME, "glyphicon-star")))
             num_of_reviews = int(product.find_element(By.CSS_SELECTOR, ".ratings .pull-right").text.split()[0])
