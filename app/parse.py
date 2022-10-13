@@ -15,7 +15,7 @@ class Product:
     num_of_reviews: int
 
 
-def get_all_products():
+def get_all_products() -> None:
     pass
 
 
