@@ -7,6 +7,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from contextlib import contextmanager
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -36,6 +37,14 @@ PRODUCT_FIELDS = [field.name for field in fields(Product)]
 _driver: WebDriver | None = None
 
 
+@contextmanager
+def ignored(*exceptions):
+    try:
+        yield
+    except exceptions:
+        pass
+
+
 def get_driver() -> WebDriver:
     return _driver
 
@@ -45,11 +54,11 @@ def set_driver(new_driver: WebDriver) -> None:
     _driver = new_driver
 
 
-def parse_additional_info(product_soup: Tag) -> dict[str, float]:
+def parse_additional_info(product_soup: Tag) -> dict | list:
     detailed_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
     driver = get_driver()
     driver.get(detailed_url)
-    try:
+    with ignored(Exception):
         swatches = driver.find_element(By.CLASS_NAME, "swatches")
         buttons = swatches.find_elements(By.TAG_NAME, "button")
         add_info = {}
@@ -61,7 +70,7 @@ def parse_additional_info(product_soup: Tag) -> dict[str, float]:
                 ] = float(driver.find_element(
                     By.CLASS_NAME, "price"
                 ).text.replace("$", ""))
-    except NoSuchElementException:
+    with ignored(Exception):
         colors = driver.find_elements(By.TAG_NAME, "option")
         add_info = [color.get_property("value") for color in colors][1:]
     return add_info
@@ -82,22 +91,18 @@ def parse_single_product(product_soup: Tag) -> Product:
 
 
 def accept_cookies(driver: WebDriver) -> None:
-    try:
+    with ignored(Exception):
         accept = driver.find_element(By.CLASS_NAME, "acceptCookies")
         accept.click()
-    except NoSuchElementException:
-        pass
 
 
 def load_page(driver: WebDriver) -> None:
     driver.maximize_window()
-    try:
+    with ignored(Exception):
         more = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
         while more.is_displayed():
             more.click()
             time.sleep(1)
-    except NoSuchElementException:
-        pass
 
 
 def parse_single_page(url: str) -> list[Product]:
