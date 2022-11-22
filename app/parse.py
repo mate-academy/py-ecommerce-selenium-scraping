@@ -18,8 +18,6 @@ TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
 
 ALL_URL_FOR_THIS_TACK = [HOME_URL, COMPUTERS_URL, LAPTOPS_URL, TABLES_URL, PHONES_URL, TOUCH_URL]
 
-# TEST = [TABLES_URL, LAPTOPS_URL]
-
 
 @dataclass
 class Product:
@@ -73,10 +71,6 @@ def get_all_products() -> None:
 
                 if button.get_attribute("style"):
                     break
-
-            # if driver.find_element(By.CLASS_NAME, "acceptCookies"):
-            #     accept_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
-            #     driver.execute_script("arguments[0].click();", accept_button)
 
             page_source = driver.page_source
 
