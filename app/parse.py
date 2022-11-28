@@ -86,30 +86,17 @@ def parsing_page(url: str, file_name: str) -> None:
 
 
 def get_all_products() -> None:
-    parsing_page(
-        "https://webscraper.io/test-sites/e-commerce/more",
-        "home.csv"
-    )
-    parsing_page(
-        "https://webscraper.io/test-sites/e-commerce/more/computers",
-        "computers.csv"
-    )
-    parsing_page(
-        "https://webscraper.io/test-sites/e-commerce/more/computers/laptops",
-        "laptops.csv"
-    )
-    parsing_page(
-        "https://webscraper.io/test-sites/e-commerce/more/computers/tablets",
-        "tablets.csv"
-    )
-    parsing_page(
-        "https://webscraper.io/test-sites/e-commerce/more/phones",
-        "phones.csv"
-    )
-    parsing_page(
-        "https://webscraper.io/test-sites/e-commerce/more/phones/touch",
-        "touch.csv"
-    )
+    pages = {
+        "home": "",
+        "computers": "computers",
+        "laptops": "computers/laptops",
+        "tablets": "computers/tablets",
+        "phones": "phones",
+        "touch": "phones/touch",
+    }
+    base_url = "https://webscraper.io/test-sites/e-commerce/more"
+    for page in pages.keys():
+        parsing_page(f"{base_url}/{pages[page]}", f"{page}.csv")
 
 
 def save_to_file(file_name: str, products_list: list[Product]) -> None:
