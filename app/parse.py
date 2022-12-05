@@ -33,9 +33,6 @@ class Product:
     num_of_reviews: int
 
 
-_driver: WebDriver | None = None
-
-
 class ChromeDriver:
     def __init__(self) -> None:
         self.__driver = webdriver.Chrome()
@@ -64,7 +61,7 @@ def parse_single_product(driver: WebElement) -> Product:
     )
 
 
-def save_file(products: [Product], file_name) -> None:
+def save_file(products: [Product], file_name: str) -> None:
     with open(file_name, "w", newline="") as file:
         rows_titles = [
             "title",
@@ -108,7 +105,10 @@ def get_single_page_product(url: str, driver: WebDriver) -> [Product]:
 def get_all_products() -> None:
     with webdriver.Chrome() as new_driver:
         for file_name, page in LIST_URL.items():
-            save_file(get_single_page_product(page, new_driver), file_name + ".csv")
+            save_file(
+                get_single_page_product(page, new_driver),
+                file_name + ".csv"
+            )
 
 
 if __name__ == "__main__":
