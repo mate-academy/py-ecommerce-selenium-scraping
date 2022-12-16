@@ -1,18 +1,15 @@
 import csv
 import os.path
 from pathlib import Path
-
 import pytest
-
-from app.parse import get_all_products, Product
-
+from app import main
 
 TEST_DIR = Path(__file__).resolve().parent
 
 
 @pytest.fixture(scope="session", autouse=True)
 def run_scraper():
-    get_all_products()
+    main.get_all_products()
 
 
 @pytest.mark.parametrize("page", ["home", "computers", "phones"])
@@ -31,7 +28,7 @@ def test_static_products_are_correct(page):
         for correct_row in correct_reader:
             result_row = next(result_reader)
 
-            correct_product = Product(*correct_row)
-            result_product = Product(*result_row)
+            correct_product = main.Product(*correct_row)
+            result_product = main.Product(*result_row)
 
             assert correct_product == result_product

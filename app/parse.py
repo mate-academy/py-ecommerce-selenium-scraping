@@ -1,23 +1,11 @@
-import csv
 import time
-from dataclasses import dataclass, fields, astuple
-from urllib.parse import urljoin
+from dataclasses import fields, dataclass
+
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-
-BASE_URL = "https://webscraper.io"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-LIST_URLS = [
-    (HOME_URL, "home.csv"),
-    (urljoin(HOME_URL, "computers"), "computers.csv"),
-    (urljoin(HOME_URL, "computers/laptops"), "laptops.csv"),
-    (urljoin(HOME_URL, "computers/tablets"), "tablets.csv"),
-    (urljoin(HOME_URL, "phones"), "phones.csv"),
-    (urljoin(HOME_URL, "phones/touch"), "touch.csv"),
-]
 
 
 @dataclass
@@ -32,15 +20,6 @@ class Product:
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 _driver: WebDriver | None = None
-
-
-class ChromeDriver:
-    def __init__(self) -> None:
-        self.__driver = webdriver.Chrome()
-
-    @property
-    def get_driver(self) -> WebDriver:
-        return self.__driver
 
 
 def parse_single_product(driv: WebElement) -> [Product]:
@@ -100,22 +79,3 @@ def get_single_page_product(driv: WebDriver, url: str) -> [Product]:
     finally:
         products = driv.find_elements(By.CLASS_NAME, "thumbnail")
     return [parse_single_product(product) for product in products]
-
-
-def write_products_to_csv(products: [Product], output_csv_path: str) -> None:
-    with open(output_csv_path, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(PRODUCT_FIELDS)
-        writer.writerows([astuple(product) for product in products])
-
-
-def get_all_products() -> None:
-    with webdriver.Chrome() as driver:
-        for url in LIST_URLS:
-            write_products_to_csv(
-                get_single_page_product(driver, url[0]), url[1]
-            )
-
-
-if __name__ == "__main__":
-    get_all_products()
