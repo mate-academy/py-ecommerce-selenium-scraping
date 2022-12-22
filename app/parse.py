@@ -42,15 +42,26 @@ def parse_product(product_element: WebElement) -> Product:
         title=product_element.find_element(
             By.CLASS_NAME, "title"
         ).get_attribute("title"),
-        description=product_element.find_element(By.CLASS_NAME, "description").text,
-        price=float(product_element.find_element(
-            By.CLASS_NAME, "price"
-        ).text.replace("$", "")),
-        rating=int(len(product_element.find_elements(By.CLASS_NAME, "glyphicon-star"))),
-        num_of_reviews=int(product_element.find_element(
-            By.CSS_SELECTOR, ".ratings .pull-right"
-        ).text.split()[0],)
+        description=product_element.find_element(
+            By.CLASS_NAME, "description"
+        ).text,
+        price=float(
+            product_element.find_element(By.CLASS_NAME, "price").text.replace(
+                "$", ""
+            )
+        ),
+        rating=int(
+            len(
+                product_element.find_elements(By.CLASS_NAME, "glyphicon-star")
+            )
+        ),
+        num_of_reviews=int(
+            product_element.find_element(
+                By.CSS_SELECTOR, ".ratings .pull-right"
+            ).text.split()[0],
+        ),
     )
+
 
 def save_file(file_name: str, products: list[Product]) -> None:
     with open(file_name, "w", newline="", encoding="utf-8") as csvfile:
