@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -47,7 +48,7 @@ def set_driver(new_driver: WebDriver) -> None:
     _driver = new_driver
 
 
-def parse_page(url: str):
+def parse_page(url: str) -> list[WebElement]:
     driver = get_driver()
     driver.get(url)
 
@@ -80,17 +81,21 @@ def get_all_products() -> None:
             write_products_to_csv(path, res)
 
 
-def get_single_product(product) -> Product:
+def get_single_product(product: WebElement) -> Product:
     return Product(
-        title=product.find_element(By.CLASS_NAME, "title").get_attribute("title"),
+        title=product.find_element(
+            By.CLASS_NAME, "title"
+        ).get_attribute("title"),
         description=product.find_element(By.CLASS_NAME, "description").text,
-        price=float(product.find_element(By.CLASS_NAME, "price").text.replace("$", "")),
+        price=float(product.find_element(
+            By.CLASS_NAME, "price"
+        ).text.replace("$", "")),
         rating=len(product.find_elements(By.CLASS_NAME, "glyphicon-star")),
-        num_of_reviews=int(product.find_element(
-            By.CLASS_NAME, "ratings"
-        ).find_element(
-            By.TAG_NAME, "p"
-        ).text.split(" ")[0]),
+        num_of_reviews=int(
+            product.find_element(By.CLASS_NAME, "ratings")
+            .find_element(By.TAG_NAME, "p")
+            .text.split(" ")[0]
+        ),
     )
 
 
