@@ -30,10 +30,12 @@ def parse_single_product(driv: WebElement) -> [Product]:
             By.CLASS_NAME, "description").text,
         price=float(driv.find_element(
             By.CLASS_NAME, "pull-right").text.replace("$", "")),
-        rating=len(driv.find_element(
-            By.CLASS_NAME, "ratings").find_elements(
-            By.CLASS_NAME, "glyphicon-star"
-        )
+        rating=len(
+            driv.find_element(
+                By.CLASS_NAME, "ratings"
+                ).find_elements(
+                By.CLASS_NAME, "glyphicon-star"
+            )
         ),
         num_of_reviews=int(driv.find_element(
             By.CSS_SELECTOR, ".ratings .pull-right"
