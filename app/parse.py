@@ -25,21 +25,24 @@ _driver: WebDriver | None = None
 def parse_single_product(driv: WebElement) -> [Product]:
     return Product(
         title=driv.find_element(
-            By.CLASS_NAME, "title").get_attribute("title"),
+            By.CLASS_NAME, "title"
+        ).get_attribute("title"),
         description=driv.find_element(
-            By.CLASS_NAME, "description").text,
+            By.CLASS_NAME, "description"
+        ).text,
         price=float(driv.find_element(
-            By.CLASS_NAME, "pull-right").text.replace("$", "")),
-        rating=len(
-            driv.find_element(
-                By.CLASS_NAME, "ratings"
-                ).find_elements(
-                By.CLASS_NAME, "glyphicon-star"
-            )
+            By.CLASS_NAME, "pull-right"
+        ).text.replace("$", "")),
+        rating=len(driv.find_element(
+            By.CLASS_NAME, "ratings"
+        ).find_elements(
+            By.CLASS_NAME, "glyphicon-star"
+        )
         ),
         num_of_reviews=int(driv.find_element(
             By.CSS_SELECTOR, ".ratings .pull-right"
-        ).text.split()[0]))
+        ).text.split()[0])
+    )
 
 
 def search_urls(url: str) -> list:
