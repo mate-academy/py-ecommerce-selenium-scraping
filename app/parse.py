@@ -6,13 +6,9 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 
-
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 PRODUCT_FIELDS = ["title", "description", "price", "rating", "num_of_reviews"]
-
-
-WEB_DRIVER: WebDriver | None = None
 
 
 @dataclass
@@ -22,6 +18,22 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
+
+
+class WebDriverChrome:
+    def __init__(self, driver: None | WebDriver = None) -> None:
+        self._driver = driver
+
+    @property
+    def driver_chrome(self) -> None | WebDriver:
+        return self._driver
+
+    @driver_chrome.setter
+    def driver_chrome(self, value: WebDriver) -> None:
+        if isinstance(value, WebDriver):
+            self._driver = value
+        else:
+            raise Exception("Driver is invalid")
 
 
 def parse_single_product(product_soup: WebElement) -> Product:
@@ -46,10 +58,9 @@ def parse_single_product(product_soup: WebElement) -> Product:
     )
 
 
-def get_page_products(path: str) -> list[Product]:
+def get_page_products(path: str, driver: WebDriver) -> list[Product]:
     url = urljoin(HOME_URL, path)
 
-    driver = get_driver()
     driver.get(url)
 
     try:
@@ -68,32 +79,27 @@ def get_page_products(path: str) -> list[Product]:
     return [parse_single_product(product) for product in products]
 
 
-def get_driver() -> WebDriver:
-    return WEB_DRIVER
+def write_to_csv_file(path: str, products: list[Product]) -> None:
+    path_file = {
+        "": "home.csv",
+        "computers/": "computers.csv",
+        "phones/": "phones.csv",
+        "computers/laptops": "laptops.csv",
+        "phones/touch": "touch.csv",
+        "computers/tablets": "tablets.csv",
+    }
 
-
-def set_driver(new_driver: WebDriver) -> None:
-    global WEB_DRIVER
-    WEB_DRIVER = new_driver
-
-
-def csv_file(path: str, products: list[Product]) -> None:
-    if path == "":
-        name = "home"
-    else:
-        path = path.split("/")
-        path = [name for name in path if name]
-        name = path[0] if len(path) == 1 else path[1]
-
-    with open(
-            "".join((name, ".csv")),
-            "w",
-            encoding="utf-8",
-            newline=""
-    ) as file:
-        writer = csv.writer(file)
-        writer.writerow(PRODUCT_FIELDS)
-        writer.writerows([astuple(product) for product in products])
+    for key, file_name in path_file.items():
+        if path == key:
+            with open(
+                    file_name,
+                    "w",
+                    encoding="utf-8",
+                    newline=""
+            ) as file_csv:
+                writer = csv.writer(file_csv)
+                writer.writerow(PRODUCT_FIELDS)
+                writer.writerows([astuple(product) for product in products])
 
 
 def get_all_products() -> None:
@@ -106,14 +112,14 @@ def get_all_products() -> None:
         "computers/tablets"
     ]
     with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-        driver = get_driver()
+        driver = WebDriverChrome(new_driver)
+        driver = driver.driver_chrome
         driver.get(HOME_URL)
 
         cookies = driver.find_element(By.CLASS_NAME, "acceptCookies")
         cookies.click()
         for path in urls:
-            csv_file(path, get_page_products(path))
+            write_to_csv_file(path, get_page_products(path, driver))
 
 
 if __name__ == "__main__":
