@@ -79,7 +79,19 @@ def get_page_products(path: str, driver: WebDriver) -> list[Product]:
     return [parse_single_product(product) for product in products]
 
 
-def write_to_csv_file(path: str, products: list[Product]) -> None:
+def write_to_csv_file(file: str, products: list[Product]) -> None:
+    with open(
+            file,
+            "w",
+            encoding="utf-8",
+            newline=""
+    ) as file_csv:
+        writer = csv.writer(file_csv)
+        writer.writerow(PRODUCT_FIELDS)
+        writer.writerows([astuple(product) for product in products])
+
+
+def get_all_products() -> None:
     path_file = {
         "": "home.csv",
         "computers/": "computers.csv",
@@ -88,29 +100,6 @@ def write_to_csv_file(path: str, products: list[Product]) -> None:
         "phones/touch": "touch.csv",
         "computers/tablets": "tablets.csv",
     }
-
-    for key, file_name in path_file.items():
-        if path == key:
-            with open(
-                    file_name,
-                    "w",
-                    encoding="utf-8",
-                    newline=""
-            ) as file_csv:
-                writer = csv.writer(file_csv)
-                writer.writerow(PRODUCT_FIELDS)
-                writer.writerows([astuple(product) for product in products])
-
-
-def get_all_products() -> None:
-    urls = [
-        "",
-        "computers/",
-        "phones/",
-        "computers/laptops",
-        "phones/touch",
-        "computers/tablets"
-    ]
     with webdriver.Chrome() as new_driver:
         driver = WebDriverChrome(new_driver)
         driver = driver.driver_chrome
@@ -118,8 +107,8 @@ def get_all_products() -> None:
 
         cookies = driver.find_element(By.CLASS_NAME, "acceptCookies")
         cookies.click()
-        for path in urls:
-            write_to_csv_file(path, get_page_products(path, driver))
+        for path, file_to_save in path_file.items():
+            write_to_csv_file(file_to_save, get_page_products(path, driver))
 
 
 if __name__ == "__main__":
