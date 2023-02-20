@@ -49,7 +49,7 @@ def set_driver(new_driver: WebDriver) -> None:
     _driver = new_driver
 
 
-def parse_single_product(product_soup: webdriver) -> Product:
+def parse_single_product(product_soup: BeautifulSoup) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
         description=product_soup.select_one(".description").text,
