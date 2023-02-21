@@ -1,35 +1,12 @@
 import time
 import csv
 from dataclasses import dataclass, astuple, fields
-from urllib.parse import urljoin
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
-LAPTOPS_URL = urljoin(
-    BASE_URL,
-    "test-sites/e-commerce/more/computers/laptops"
-)
-TABLETS_URL = urljoin(
-    BASE_URL,
-    "test-sites/e-commerce/more/computers/tablets"
-)
-PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
-TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
-
-URLS = {
-    HOME_URL: "home.csv",
-    COMPUTERS_URL: "computers.csv",
-    LAPTOPS_URL: "laptops.csv",
-    TABLETS_URL: "tablets.csv",
-    PHONES_URL: "phones.csv",
-    TOUCH_URL: "touch.csv",
-}
+import constants as const
 
 
 @dataclass
@@ -39,9 +16,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-
-
-PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 
 class Driver:
@@ -98,7 +72,7 @@ def get_all_products() -> None:
     with webdriver.Chrome() as new_driver:
         new_driver.set_window_position(-20, 0)
         Driver.set_driver(new_driver)
-        for url, file_name in URLS.items():
+        for url, file_name in const.URLS.items():
             products = parse_page(url)
             result = [get_single_product(product) for product in products]
             write_products_to_csv(file_name, result)
@@ -107,12 +81,13 @@ def get_all_products() -> None:
 def write_products_to_csv(file_name: str, products: [Product]) -> None:
     with open(file_name, "w") as file:
         writer = csv.writer(file)
-        writer.writerow(PRODUCT_FIELDS)
+        writer.writerow(product_fields)
         writer.writerows([astuple(product) for product in products])
 
 
 if __name__ == "__main__":
     start = time.perf_counter()
+    product_fields = [field.name for field in fields(Product)]
     get_all_products()
     end = time.perf_counter()
 
