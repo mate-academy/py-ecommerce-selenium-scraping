@@ -6,14 +6,19 @@ from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
 LAPTOPS_URL = urljoin(
-    BASE_URL, "test-sites/e-commerce/more/computers/laptops")
+    BASE_URL,
+    "test-sites/e-commerce/more/computers/laptops"
+)
 TABLETS_URL = urljoin(
-    BASE_URL, "test-sites/e-commerce/more/computers/tablets")
+    BASE_URL,
+    "test-sites/e-commerce/more/computers/tablets"
+)
 PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
 TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
 
@@ -38,23 +43,24 @@ class Product:
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
-_driver: WebDriver | None = None
+
+class Driver:
+    _driver: WebDriver | None = None
+
+    @classmethod
+    def get_driver(cls) -> WebDriver:
+        return cls._driver
+
+    @classmethod
+    def set_driver(cls, new_driver: WebDriver) -> None:
+        cls._driver = new_driver
 
 
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
-
-def parse_page(url: str) -> list:
-    driver = get_driver()
+def parse_page(url: str) -> list[WebElement]:
+    driver = Driver.get_driver()
     driver.get(url)
 
-    time.sleep(1)
+    time.sleep(1.5)
 
     if len(driver.find_elements(By.CLASS_NAME, "acceptCookies")):
         cookies = driver.find_element(By.CLASS_NAME, "acceptCookies")
@@ -72,7 +78,7 @@ def parse_page(url: str) -> list:
     return products
 
 
-def get_single_product(product: webdriver) -> Product:
+def get_single_product(product: WebElement) -> Product:
     return Product(
         title=product.find_element(
             By.CLASS_NAME, "title").get_attribute("title"),
@@ -91,12 +97,10 @@ def get_single_product(product: webdriver) -> Product:
 def get_all_products() -> None:
     with webdriver.Chrome() as new_driver:
         new_driver.set_window_position(-20, 0)
-        set_driver(new_driver)
+        Driver.set_driver(new_driver)
         for url, file_name in URLS.items():
             products = parse_page(url)
-            result = []
-            for product in products:
-                result.append(get_single_product(product))
+            result = [get_single_product(product) for product in products]
             write_products_to_csv(file_name, result)
 
 
