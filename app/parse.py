@@ -1,14 +1,12 @@
 import csv
-import os
 import time
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
-import requests
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -37,78 +35,68 @@ class Product:
     num_of_reviews: int
 
 
-_driver: WebDriver | None = None
+class Driver:
+    _driver: WebDriver | None = None
+
+    @classmethod
+    def get_driver(cls) -> WebDriver:
+        return cls._driver
+
+    @classmethod
+    def set_driver(cls, new_driver: webdriver) -> None:
+        cls._driver = new_driver
 
 
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
-
-def parse_single_product(product_soup: BeautifulSoup) -> Product:
+def parse_single_product(product: WebElement) -> Product:
     return Product(
-        title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text,
-        price=float(product_soup.select_one(".price").text.replace("$", "")),
-        rating=int(len(product_soup.select(".glyphicon"))),
+        title=product.find_element(
+            By.CLASS_NAME, "title"
+        ).get_attribute("title"),
+        description=product.find_element(By.CLASS_NAME, "description").text,
+        price=float(
+            product.find_element(By.CLASS_NAME, "price").text.replace("$", "")
+        ),
+        rating=int(len(product.find_elements(By.CLASS_NAME, "glyphicon"))),
         num_of_reviews=int(
-            product_soup.select_one(".ratings > p").text.split()[0]
+            product.find_element(By.CLASS_NAME, "ratings").
+            find_element(By.TAG_NAME, "p").text.split()[0]
         ),
     )
 
 
-def get_page_soup(url: str) -> list[Product]:
-    page = requests.get(url).content
-    page_soup = BeautifulSoup(page, "html.parser")
+def get_page(url: str) -> None:
+    driver = Driver.get_driver()
+    driver.get(url)
+    if len(driver.find_elements(By.CLASS_NAME, "acceptCookies")):
+        driver.find_element(By.CLASS_NAME, "acceptCookies").click()
 
-    if page_soup.select_one(".ecomerce-items-scroll-more"):
-        with webdriver.Chrome() as new_driver:
-            set_driver(new_driver)
-            driver = get_driver()
-            driver.get(url)
-            button = driver.find_element(
-                By.CLASS_NAME, "ecomerce-items-scroll-more"
-            )
-            driver.find_element(By.CLASS_NAME, "acceptCookies").click()
+    if len(driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")):
+        button = driver.find_element(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
+        while not button.get_property("style"):
+            button.click()
+            time.sleep(0.1)
+        products = driver.find_elements(By.CLASS_NAME, "thumbnail")
+    else:
+        products = driver.find_elements(By.CLASS_NAME, "thumbnail")
 
-            while not button.get_property("style"):
-                button.click()
-                time.sleep(0.1)
-
-                button = driver.find_element(
-                    By.CLASS_NAME, "ecomerce-items-scroll-more"
-                )
-
-            with open("index.html", "w", encoding="cp1251") as file:
-                file.write(driver.page_source)
-
-        with open("index.html") as file:
-            page = file.read().replace("&nbsp;", " ")
-        os.remove("index.html")
-
-        page_soup = BeautifulSoup(page, "html.parser")
-        return [parse_single_product(page)
-                for page in page_soup.select(".thumbnail")]
-
-    page_soup = page_soup.select(".thumbnail")
-    return [parse_single_product(page) for page in page_soup]
+    return [parse_single_product(product) for product in products]
 
 
 def write_products_to_csv(name: str, products: [Product]) -> None:
     product_fields = [field.name for field in fields(Product)]
-    with open(name, "w", newline="", encoding="cp1251") as file:
+    with open(name, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(product_fields)
         writer.writerows([astuple(product) for product in products])
 
 
 def get_all_products() -> None:
-    for name, url in urls.items():
-        write_products_to_csv(name, get_page_soup(url))
+    with webdriver.Chrome() as new_driver:
+        Driver.set_driver(new_driver)
+        for name, url in urls.items():
+            write_products_to_csv(name, get_page(url))
 
 
 if __name__ == "__main__":
