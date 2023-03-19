@@ -2,16 +2,20 @@ import csv
 import logging
 import requests
 import sys
-from dataclasses import dataclass, fields, astuple
+from dataclasses import dataclass, fields
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common import TimeoutException, ElementNotInteractableException, ElementClickInterceptedException
+from selenium.common import (
+    TimeoutException,
+    ElementNotInteractableException,
+    ElementClickInterceptedException
+)
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions
 
 BASE_URL = "https://webscraper.io/"
 
@@ -24,8 +28,6 @@ class Product:
     rating: int
     num_of_reviews: int
 
-
-PRODUCT_FIELDS = ["title", "description", "price", "rating", "num_of_reviews"]
 
 _driver: WebDriver | None = None
 
@@ -53,9 +55,12 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
     rating_soup = product_soup.select_one("div.ratings")
     rating_stars = rating_soup.select(".glyphicon.glyphicon-star")
     rating = len(rating_stars)
+    description = product_soup.select_one(
+        ".description"
+    ).text.replace(u"\xa0", u" ")
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text,
+        description=description,
         price=float(product_soup.select_one(".price").text.replace("$", "")),
         rating=rating,
         num_of_reviews=int(
@@ -75,23 +80,21 @@ def get_all_products() -> None:
         get_save_products()
 
 
-def get_save_products():
+def get_save_products() -> None:
     links = get_links()
-    headers = {
-        "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Mobile Safari/537.36"
-    }
     for link in links:
         page_link = urljoin(BASE_URL, link)
         logging.info(f"Start parsing {page_link}")
-        page = requests.get(page_link, headers=headers).content
-        page_soup = BeautifulSoup(page, "html.parser")
         driver = get_driver()
         driver.get(page_link)
         wait = WebDriverWait(driver, 5)
 
         try:
-            accept_button = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "acceptCookies")))
+            accept_button = wait.until(
+                expected_conditions.presence_of_element_located(
+                    (By.CLASS_NAME, "acceptCookies")
+                )
+            )
             if accept_button:
                 accept_button.click()
         except TimeoutException:
@@ -100,30 +103,33 @@ def get_save_products():
         while True:
             try:
                 more_button = wait.until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.ecomerce-items-scroll-more")))
+                    expected_conditions.presence_of_element_located(
+                        (By.CSS_SELECTOR, "a.ecomerce-items-scroll-more"))
+                )
             except TimeoutException:
                 break
 
             try:
                 more_button.click()
-                wait.until_not(EC.staleness_of(more_button))
+                wait.until_not(expected_conditions.staleness_of(more_button))
             except ElementNotInteractableException:
                 break
             except ElementClickInterceptedException:
                 continue
 
-        all_products = get_single_page_products(BeautifulSoup(driver.page_source, "html.parser"))
+        all_products = get_single_page_products(
+            BeautifulSoup(driver.page_source, "html.parser")
+        )
 
         file_name = link.split("/")[-1] + ".csv"
         if file_name == ".csv":
             file_name = "home.csv"
-        header_names = ['title', 'description', 'price', 'rating', 'num_of_reviews']
-        write_products_to_csv(all_products, file_name, header_names)
+        write_products_to_csv(all_products, file_name)
 
 
 def get_links() -> list:
     links = ["test-sites/e-commerce/more/"]
-    logging.info(f"Start parsing links")
+    logging.info("Start parsing links")
     home_url = urljoin(BASE_URL, "test-sites/e-commerce/more/")
     page = requests.get(home_url).content
     page_soup = BeautifulSoup(page, "html.parser")
@@ -139,12 +145,13 @@ def get_links() -> list:
     return links
 
 
-def write_products_to_csv(products: [Product], file_name: str, header_names: [str]) -> None:
-    with open(file_name, "w", newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(header_names)
+def write_products_to_csv(products: [Product], file_name: str) -> None:
+    with open(file_name, "w", newline="", encoding="utf-8") as csvfile:
+        field_names = [field.name for field in fields(products[0])]
+        writer = csv.DictWriter(csvfile, fieldnames=field_names)
+        writer.writeheader()
         for product in products:
-            writer.writerow(astuple(product))
+            writer.writerow(product.__dict__)
 
 
 if __name__ == "__main__":
