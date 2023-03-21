@@ -68,7 +68,7 @@ def check_more_pages(page_soup: BeautifulSoup) -> str:
     return more_pages
 
 
-def get_all_page_products(page_soup: BeautifulSoup) -> list:
+def get_all_page_products(page_soup: BeautifulSoup) -> list[Product]:
     products = page_soup.select(".thumbnail")
     return [parse_single_product(product) for product in products]
 
