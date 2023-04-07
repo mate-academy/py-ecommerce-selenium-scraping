@@ -1,7 +1,6 @@
 import csv
 from dataclasses import dataclass
 from urllib.parse import urljoin
-from concurrent.futures import ThreadPoolExecutor
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -135,14 +134,8 @@ def get_all_products() -> None:
         "touch": "phones/touch",
     }
 
-    with ThreadPoolExecutor(max_workers=len(pages)) as executor:
-        futures = [
-            executor.submit(scrape_page, name, f"{HOME_URL}{url}")
-            for name, url in pages.items()
-        ]
-
-    for future in futures:
-        future.result()
+    for name, url in pages.items():
+        scrape_page(name, f"{HOME_URL}{url}")
 
 
 if __name__ == "__main__":
