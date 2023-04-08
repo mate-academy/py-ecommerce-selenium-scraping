@@ -71,7 +71,7 @@ def get_single_product(product_soup: BeautifulSoup) -> Product:
 def get_page_of_product() -> [Product]:
 
     driver = get_driver()
-    url = "https://webscraper.io/test-sites/e-commerce/more"
+    url = "https://webscraper.io/test-sites/e-commerce/more/phones"
     driver.get(url)
 
     try:
