@@ -1,13 +1,14 @@
+import csv
 import logging
 import sys
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, astuple
+import time
 from urllib.parse import urljoin
-
-import requests
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+import requests
 
 
 BASE_URL = "https://webscraper.io/"
@@ -43,7 +44,7 @@ logging.basicConfig(
               ],
 )
 
-_driver: WebDriver | None = None
+_driver: WebDriver | None
 
 
 def get_driver() -> WebDriver:
@@ -55,60 +56,74 @@ def set_driver(new_driver: WebDriver) -> None:
     _driver = new_driver
 
 
-def get_single_product(product_soup: BeautifulSoup) -> Product:
+def get_single_product(product_soup: Tag) -> Product:
+    additional_info = parse_product_prices(
+            product_soup.select_one(".title")["href"]
+        )
+    if additional_info == {}:
+        additional_info = {}
     return Product(
         title=product_soup.select_one(".title")["title"],
         description=product_soup.select_one(".description").text,
-        price=float(product_soup.select_one(".price").text.replace("$", "")),
+        price=float(product_soup.select_one(
+            ".price").text.replace("$", "")),
         rating=len(product_soup.select(".glyphicon-star")),
-        num_of_reviews=int(product_soup.select_one(".ratings > p.pull-right").text.split()[0]),
-        additional_info=parse_product_prices(
-            product_soup.select_one(".title")["href"]
-        ),
+        num_of_reviews=int(product_soup.select_one(
+            ".ratings > p.pull-right").text.split()[0]
+                           ),
+        additional_info=additional_info
     )
 
 
-def get_page_of_product() -> [Product]:
-
-    driver = get_driver()
-    url = "https://webscraper.io/test-sites/e-commerce/more/phones"
-    driver.get(url)
+def get_page_of_product(url_product: str) -> [Product]:
+    _driver = get_driver()
+    url = urljoin(BASE_URL, url_product)
+    _driver.get(url)
 
     try:
-        more_btn = driver.find_element(
-            By.CLASS_NAME,
-            "ecomerce-items-scroll-more"
+        accept_cookies_button = _driver.find_element(
+            By.CLASS_NAME, "acceptCookies"
         )
-
-        if more_btn:
-
-            try:
-
-                more_btn.click()
-            except Exception:
-                pass
-    except Exception:
+        if accept_cookies_button:
+            accept_cookies_button.click()
+            time.sleep(0.1)
+    except:
         pass
 
-    page = requests.get(url).content
+    try:
+        more_button = _driver.find_element(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
+
+        if more_button:
+            while more_button.value_of_css_property(
+                    "display") == "block":
+                more_button.click()
+                time.sleep(0.1)
+    except:
+        pass
+
+    page = _driver.page_source
     soup = BeautifulSoup(page, "html.parser")
+
     products = soup.select(".thumbnail")
-    return [get_single_product(product) for product in products]
+    return [get_single_product(product_) for product_ in products]
 
 
 def parse_product_prices(product_url: str) -> dict:
-    driver = get_driver()
-    driver.get(urljoin(BASE_URL, product_url))
+    _driver = get_driver()
+    _driver.get(urljoin(BASE_URL, product_url))
     prices_data = {}
     try:
-        swatches = driver.find_element(By.CLASS_NAME, "swatches")
+        swatches = _driver.find_element(By.CLASS_NAME, "swatches")
         prices_data = {}
         buttons = swatches.find_elements(By.TAG_NAME, "button")
         for button in buttons:
 
             if not button.get_property("disabled"):
                 button.click()
-                price = float(driver.find_element(By.CLASS_NAME, "price").text.replace("$", ""))
+                price = float(_driver.find_element(
+                    By.CLASS_NAME, "price").text.replace("$", ""))
                 prices_data[button.get_property("value")] = price
         return prices_data
     except Exception:
@@ -116,13 +131,19 @@ def parse_product_prices(product_url: str) -> dict:
     return prices_data
 
 
-
-# def get_all_products() -> [Product]:
-#
-#         return get_page_of_product("https://webscraper.io/test-sites/e-commerce/more/phones/touch")
+def get_all_products() -> [Product]:
+    with webdriver.Chrome() as new_driver:
+        set_driver(new_driver)
+        for key, value in URLS.items():
+            products = get_page_of_product(str(value))
+            output_csv_path = str(key) + ".csv"
+            with open(
+                    output_csv_path,
+                    "w+", newline="", encoding="UTF-8") as file:
+                writer = csv.writer(file)
+                writer.writerow(PRODUCT_FIELD)
+                writer.writerows([astuple(product_) for product_ in products])
 
 
 if __name__ == "__main__":
-    with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-        print(get_page_of_product())
+    get_all_products()
