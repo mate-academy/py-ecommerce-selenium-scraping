@@ -25,9 +25,15 @@ There are classes template for `Product` in `app/parse.py`.
 So, your task is to implement `get_all_products` function, which will save all 6 
 pages to corresponding `.csv` files with correct product data.
 
+### Optional Task
+1. Run Selenium without opening a browser;
+2. Add comprehensive process annotations.
+
 Hints:
 - Do not copy-paste the code for different pages scraping;
 - Write the global logic for parsing the single page;
 - Be aware of `accept cookies` button, while developing, possible fix - just to click it, when it appears;
 - Sometimes, you need to wait a bit, while your driver is acting after some event;
-- Make your code as clean as possible.
+- Make your code as clean as possible;
+- Optional task №1: read about **"headless"** mode;
+- Optional task №2: read about **tqdm** library.
