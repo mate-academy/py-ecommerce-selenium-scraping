@@ -59,7 +59,8 @@ def get_single_product(product_soup: Tag) -> Product:
 
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text.replace('\xa0', ' '),
+        description=product_soup.select_one(
+            ".description").text.replace("\xa0", " "),
         price=float(product_soup.select_one(
             ".price").text.replace("$", "")),
         rating=len(product_soup.select(".glyphicon-star")),
