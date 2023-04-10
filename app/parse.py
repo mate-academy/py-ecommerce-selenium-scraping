@@ -30,7 +30,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    additional_info: dict
 
 
 PRODUCT_FIELD = [field.name for field in fields(Product)]
@@ -57,21 +56,16 @@ def set_driver(new_driver: WebDriver) -> None:
 
 
 def get_single_product(product_soup: Tag) -> Product:
-    additional_info = parse_product_prices(
-            product_soup.select_one(".title")["href"]
-        )
-    if additional_info == {}:
-        additional_info = {}
+
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text,
+        description=product_soup.select_one(".description").text.replace('\xa0', ' '),
         price=float(product_soup.select_one(
             ".price").text.replace("$", "")),
         rating=len(product_soup.select(".glyphicon-star")),
         num_of_reviews=int(product_soup.select_one(
             ".ratings > p.pull-right").text.split()[0]
                            ),
-        additional_info=additional_info
     )
 
 
@@ -110,36 +104,16 @@ def get_page_of_product(url_product: str) -> [Product]:
     return [get_single_product(product_) for product_ in products]
 
 
-def parse_product_prices(product_url: str) -> dict:
-    _driver = get_driver()
-    _driver.get(urljoin(BASE_URL, product_url))
-    prices_data = {}
-    try:
-        swatches = _driver.find_element(By.CLASS_NAME, "swatches")
-        prices_data = {}
-        buttons = swatches.find_elements(By.TAG_NAME, "button")
-        for button in buttons:
-
-            if not button.get_property("disabled"):
-                button.click()
-                price = float(_driver.find_element(
-                    By.CLASS_NAME, "price").text.replace("$", ""))
-                prices_data[button.get_property("value")] = price
-        return prices_data
-    except Exception:
-        pass
-    return prices_data
-
-
 def get_all_products() -> [Product]:
     with webdriver.Chrome() as new_driver:
         set_driver(new_driver)
         for key, value in URLS.items():
             products = get_page_of_product(str(value))
+
             output_csv_path = str(key) + ".csv"
             with open(
                     output_csv_path,
-                    "w+", newline="", encoding="UTF-8") as file:
+                    "w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(PRODUCT_FIELD)
                 writer.writerows([astuple(product_) for product_ in products])
