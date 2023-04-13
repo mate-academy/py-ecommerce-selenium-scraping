@@ -17,11 +17,11 @@ from selenium.webdriver.remote.webelement import WebElement
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
-LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops")
-TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets")
-PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
-TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
+COMPUTERS_URL = urljoin(HOME_URL, "computers")
+LAPTOPS_URL = urljoin(HOME_URL, "computers/laptops")
+TABLETS_URL = urljoin(HOME_URL, "computers/tablets")
+PHONES_URL = urljoin(HOME_URL, "phones")
+TOUCH_URL = urljoin(HOME_URL, "phones/touch")
 
 
 @dataclass
@@ -31,18 +31,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-
-
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
 
 
 def parse_one_product(product: WebElement) -> Product:
@@ -65,8 +53,7 @@ def parse_one_product(product: WebElement) -> Product:
     )
 
 
-def parse_all_products(url: str) -> list[Product]:
-    driver = get_driver()
+def parse_all_products(driver: WebDriver, url: str) -> list[Product]:
     driver.get(url)
     try:
         driver.find_element(By.CLASS_NAME, "acceptCookies").click()
@@ -84,8 +71,8 @@ def parse_all_products(url: str) -> list[Product]:
             return [parse_one_product(product) for product in products]
 
 
-def write_to_file(file_name: str, url: str) -> None:
-    all_products = parse_all_products(url)
+def write_to_file(file_name: str, driver: WebDriver, url: str) -> None:
+    all_products = parse_all_products(driver, url)
     with open(file_name, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(field.name for field in fields(Product))
@@ -93,14 +80,13 @@ def write_to_file(file_name: str, url: str) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-        write_to_file("home.csv", HOME_URL)
-        write_to_file("computers.csv", COMPUTERS_URL)
-        write_to_file("laptops.csv", LAPTOPS_URL)
-        write_to_file("tablets.csv", TABLETS_URL)
-        write_to_file("phones.csv", PHONES_URL)
-        write_to_file("touch.csv", TOUCH_URL)
+    with webdriver.Chrome() as driver:
+        write_to_file("home.csv", driver, HOME_URL)
+        write_to_file("computers.csv", driver, COMPUTERS_URL)
+        write_to_file("laptops.csv", driver, LAPTOPS_URL)
+        write_to_file("tablets.csv", driver, TABLETS_URL)
+        write_to_file("phones.csv", driver, PHONES_URL)
+        write_to_file("touch.csv", driver, TOUCH_URL)
 
 
 if __name__ == "__main__":
