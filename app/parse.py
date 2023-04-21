@@ -1,4 +1,5 @@
 import csv
+from tqdm import tqdm
 from dataclasses import astuple, dataclass, fields
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
@@ -107,9 +108,14 @@ def write_products_to_csv(products: list[Product], product_name: str) -> None:
 def get_all_products() -> None:
     with webdriver.Firefox(options=firefox_options) as new_driver:
         set_driver(new_driver)
-        for product_name, path in URL_DICT.items():
+        for product_name, path in tqdm(
+            URL_DICT.items(),
+            desc="Processing pages",
+            unit="product_page"
+        ):
             products = get_single_page_products(path)
             write_products_to_csv(products, product_name)
+            tqdm.write(f"Page of {product_name} is written to {product_name}.csv")
 
 
 if __name__ == "__main__":
