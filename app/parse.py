@@ -39,12 +39,14 @@ class Product:
     rating: int
     num_of_reviews: int
 
+
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 _driver: WebDriver | None = None
 firefox_options = Options()
 firefox_options.add_argument("--headless")
 firefox_options.add_argument("--disable-gpu")
+
 
 def get_driver() -> WebDriver:
     return _driver
@@ -78,15 +80,17 @@ def get_single_page_products(url: str) -> list[Product]:
         )
         if accept_cookies_button:
             accept_cookies_button.click()
-    except:
+    except Exception:
         pass
 
     try:
-        more_button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+        more_button = driver.find_element(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
         if more_button:
             while not more_button.value_of_css_property("display") == "none":
                 more_button.click()
-    except:
+    except Exception:
         pass
 
     page = driver.page_source
@@ -104,7 +108,6 @@ def write_products_to_csv(products: list[Product], product_name: str) -> None:
         writer.writerows([astuple(product) for product in products])
 
 
-
 def get_all_products() -> None:
     with webdriver.Firefox(options=firefox_options) as new_driver:
         set_driver(new_driver)
@@ -115,7 +118,9 @@ def get_all_products() -> None:
         ):
             products = get_single_page_products(path)
             write_products_to_csv(products, product_name)
-            tqdm.write(f"Page of {product_name} is written to {product_name}.csv")
+            tqdm.write(
+                f"Page of {product_name} is written to {product_name}.csv"
+            )
 
 
 if __name__ == "__main__":
