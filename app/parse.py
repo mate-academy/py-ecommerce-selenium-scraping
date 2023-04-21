@@ -3,7 +3,8 @@ from dataclasses import astuple, dataclass, fields
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
-from selenium.webdriver.safari.webdriver import WebDriver
+from selenium.webdriver.firefox.webdriver import WebDriver
+from selenium.webdriver.firefox.options import Options
 from selenium import webdriver
 
 
@@ -40,7 +41,9 @@ class Product:
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 _driver: WebDriver | None = None
-
+firefox_options = Options()
+firefox_options.add_argument("--headless")
+firefox_options.add_argument("--disable-gpu")
 
 def get_driver() -> WebDriver:
     return _driver
@@ -102,7 +105,7 @@ def write_products_to_csv(products: list[Product], product_name: str) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Firefox() as new_driver:
+    with webdriver.Firefox(options=firefox_options) as new_driver:
         set_driver(new_driver)
         for product_name, path in URL_DICT.items():
             products = get_single_page_products(path)
