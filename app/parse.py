@@ -7,16 +7,14 @@ from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 
-
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+BASE_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 URLS = {
-    "home": "test-sites/e-commerce/more",
-    "computers": "test-sites/e-commerce/more/computers",
-    "laptops": "test-sites/e-commerce/more/computers/laptops",
-    "tablets": "test-sites/e-commerce/more/computers/tablets",
-    "phones": "test-sites/e-commerce/more/phones",
-    "touch": "test-sites/e-commerce/more/phones/touch"
+    "home": "",
+    "computers": "computers",
+    "laptops": "computers/laptops",
+    "tablets": "computers/tablets",
+    "phones": "phones",
+    "touch": "phones/touch"
 }
 
 
@@ -31,8 +29,7 @@ class Product:
 
 PRODUCT_FIELD = [field.name for field in fields(Product)]
 
-
-_driver: WebDriver | None
+_driver: WebDriver | None = None
 
 
 def get_driver() -> WebDriver:
@@ -67,7 +64,7 @@ def check_accept_cookies(driver: WebDriver) -> None:
             accept_cookies_button.click()
             time.sleep(0.1)
     except:
-        pass
+        print("Exception occurred: The button no exists")
 
 
 def check_more_pages(driver: WebDriver) -> None:
@@ -81,10 +78,10 @@ def check_more_pages(driver: WebDriver) -> None:
                 more_button.click()
                 time.sleep(0.1)
     except:
-        pass
+        print("Exception occurred: The button no exists")
 
 
-def get_page_of_product(url_product: str) -> [Product]:
+def get_page_of_product(url_product: str) -> list[Product]:
     _driver = get_driver()
     url = urljoin(BASE_URL, url_product)
     _driver.get(url)
@@ -111,7 +108,7 @@ def write_products_in_csv_file() -> None:
             writer.writerows([astuple(product_) for product_ in products])
 
 
-def get_all_products() -> [Product]:
+def get_all_products() -> None:
     with webdriver.Chrome() as new_driver:
         set_driver(new_driver)
         write_products_in_csv_file()
