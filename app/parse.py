@@ -1,5 +1,4 @@
 import csv
-import datetime
 import time
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
@@ -10,7 +9,6 @@ from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -38,7 +36,7 @@ def parse_single_product(product: Tag) -> Product:
     return Product(
         title=product.select_one(".title")["title"],
         description=(
-            product.select_one(".description").text.replace(u'\xa0', u' ')
+            product.select_one(".description").text.replace(u"\xa0", u" ")
         ),
         price=float(product.select_one(".price").text[1:]),
         rating=len(product.select(".glyphicon-star")),
@@ -85,7 +83,7 @@ def write_csv_file(file_name: str, products: list[Product]) -> None:
 
 def get_all_products() -> None:
     chrome_options = Options()
-    chrome_options.add_argument('--headless')
+    chrome_options.add_argument("--headless")
 
     with webdriver.Chrome(options=chrome_options) as driver:
         for name, url in URLS.items():
