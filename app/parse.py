@@ -29,8 +29,6 @@ class Product:
 
 PRODUCT_FIELD = [field.name for field in fields(Product)]
 
-_driver: WebDriver | None = None
-
 
 def get_driver() -> WebDriver:
     return _driver
@@ -59,7 +57,8 @@ def check_accept_cookies(driver: WebDriver) -> None:
         if accept_cookies_button:
             accept_cookies_button.click()
             time.sleep(0.1)
-    except:
+
+    except Exception:
         print("Exception occurred: The button no exists")
 
 
@@ -73,7 +72,8 @@ def check_more_pages(driver: WebDriver) -> None:
                     "display") == "block":
                 more_button.click()
                 time.sleep(0.1)
-    except:
+
+    except Exception:
         print("Exception occurred: The button no exists")
 
 
