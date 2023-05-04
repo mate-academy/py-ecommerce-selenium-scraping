@@ -30,15 +30,6 @@ class Product:
 PRODUCT_FIELD = [field.name for field in fields(Product)]
 
 
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
-
 def get_single_product(product_soup: Tag) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
@@ -77,24 +68,23 @@ def check_more_pages(driver: WebDriver) -> None:
         print("Exception occurred: The button no exists")
 
 
-def get_page_of_product(url_product: str) -> list[Product]:
-    _driver = get_driver()
+def get_page_of_product(url_product: str, driver: WebDriver) -> list[Product]:
     url = urljoin(BASE_URL, url_product)
-    _driver.get(url)
+    driver.get(url)
 
-    check_accept_cookies(_driver)
-    check_more_pages(_driver)
+    check_accept_cookies(driver)
+    check_more_pages(driver)
 
-    page = _driver.page_source
+    page = driver.page_source
     soup = BeautifulSoup(page, "html.parser")
 
     products = soup.select(".thumbnail")
     return [get_single_product(product_) for product_ in products]
 
 
-def write_products_in_csv_file() -> None:
+def write_products_in_csv_file(driver: WebDriver) -> None:
     for key, value in URLS.items():
-        products = get_page_of_product(str(value))
+        products = get_page_of_product(str(value), driver)
         output_csv_path = str(key) + ".csv"
         with open(output_csv_path, "w", newline="") as file:
             writer = csv.writer(file)
@@ -104,8 +94,7 @@ def write_products_in_csv_file() -> None:
 
 def get_all_products() -> None:
     with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-        write_products_in_csv_file()
+        write_products_in_csv_file(new_driver)
 
 
 if __name__ == "__main__":
