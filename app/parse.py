@@ -1,11 +1,11 @@
 import csv
 import time
 from dataclasses import dataclass, astuple
-from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from urllib.parse import urljoin
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -13,7 +13,7 @@ COMPUTERS_URL = urljoin(HOME_URL, "computers/")
 LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
 TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
 PHONES_URL = urljoin(HOME_URL, "phones/")
-TOUCH_URL = urljoin(HOME_URL, "touch")
+TOUCH_URL = urljoin(PHONES_URL, "touch")
 
 
 @dataclass
@@ -85,7 +85,7 @@ def get_all_products() -> None:
                 while not button.get_attribute("style"):
                     (webdriver.ActionChains(driver)
                      .move_to_element(button).click(button).perform())
-                    time.sleep(0.1)
+                    time.sleep(0.3)
 
             except NoSuchElementException:
                 continue
