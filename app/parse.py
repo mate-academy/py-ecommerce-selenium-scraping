@@ -8,6 +8,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.remote.webdriver import WebDriver
 
+from tqdm import tqdm
+
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -77,15 +79,19 @@ def parse_single_page(page_url: str) -> list[Product]:
         while button.is_displayed():
             button.click()
             time.sleep(0.1)
-    products = driver.find_elements(By.CLASS_NAME, "thumbnail")
+    products = tqdm(
+        driver.find_elements(By.CLASS_NAME, "thumbnail"),
+        ascii=True,
+        desc=f"scraping elements from {page_url if page_url else 'home'}"
+    )
     return [parse_single_product(product) for product in products]
 
 
 def write_products_csv(filename: str, products: list[Product]) -> None:
     with open(f"{filename}.csv", "w") as file:
-        wirter = csv.writer(file)
-        wirter.writerow(PRODUCT_FIELDS)
-        wirter.writerows((astuple(product) for product in products))
+        writer = csv.writer(file)
+        writer.writerow(PRODUCT_FIELDS)
+        writer.writerows((astuple(product) for product in products))
 
 
 def get_all_products() -> None:
