@@ -82,9 +82,9 @@ def get_all_products() -> None:
     options.add_argument("--headless")
 
     with webdriver.Chrome(options=options) as driver:
-        for name, url in URLS.items():
+        for page_title, url in URLS.items():
             products = press_more_buttun(url, driver)
-            csv_data_file_create(f"{name}.csv", products)
+            csv_data_file_create(f"{page_title}.csv", products)
 
 
 if __name__ == "__main__":
