@@ -37,18 +37,6 @@ PAGES_TO_PARSE = [
 ]
 
 
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(driver: WebDriver) -> None:
-    global _driver
-    _driver = driver
-
-
 def parse_single_product(element: WebElement) -> Product:
     ratings = element.find_element(By.CLASS_NAME, "ratings")
     return Product(
@@ -66,9 +54,8 @@ def parse_single_product(element: WebElement) -> Product:
     )
 
 
-def parse_single_page(page_url: str) -> list[Product]:
+def parse_single_page(driver: WebDriver, page_url: str) -> list[Product]:
     full_url = urljoin(HOME_URL, page_url)
-    driver = get_driver()
     driver.get(full_url)
     cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
     if cookies:
@@ -98,9 +85,8 @@ def get_all_products() -> None:
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     with webdriver.Chrome(options=options) as new_driver:
-        set_driver(new_driver)
         for pagename, page_url in PAGES_TO_PARSE:
-            products = parse_single_page(page_url)
+            products = parse_single_page(new_driver, page_url)
             write_products_csv(pagename, products)
 
 
