@@ -88,7 +88,7 @@ def write_to_csv(filename: str, products: list[Product]) -> None:
 
 def get_all_products() -> None:
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     driver = webdriver.Chrome(options=options)
     driver.implicitly_wait(1)
 
