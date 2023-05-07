@@ -25,7 +25,7 @@ class Product:
     num_of_reviews: int
 
 
-def make_chrome_driver() -> webdriver:
+def set_driver() -> webdriver:
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     return webdriver.Chrome(options=chrome_options)
@@ -65,7 +65,7 @@ def get_all_products() -> None:
     urls.pop("BASE_URL")
 
     for file_name, url in urls.items():
-        with make_chrome_driver() as driver:
+        with set_driver() as driver:
             driver.get(url)
 
             try:
@@ -74,25 +74,19 @@ def get_all_products() -> None:
                 )
 
                 try:
-                    cookies = driver.find_element(
-                        By.CLASS_NAME, "acceptCookies"
-                    )
-                    (webdriver.ActionChains(driver)
-                     .move_to_element(cookies).click(cookies).perform())
+                    driver.find_element(By.CLASS_NAME, "acceptCookies").click()
                 except NoSuchElementException:
-                    continue
+                    pass
 
-                while not button.get_attribute("style"):
-                    (webdriver.ActionChains(driver)
-                     .move_to_element(button).click(button).perform())
+                while button.is_displayed():
+                    button.click()
                     time.sleep(0.3)
 
             except NoSuchElementException:
-                continue
+                pass
             finally:
                 products = driver.find_elements(By.CLASS_NAME, "thumbnail")
-                write_csv_files(file_name=file_name,
-                                products=parse_page(products))
+                write_csv_files(file_name, parse_page(products))
 
 
 if __name__ == "__main__":
