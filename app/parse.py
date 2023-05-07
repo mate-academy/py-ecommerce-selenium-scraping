@@ -11,7 +11,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
-from configs import DRIVER_PATH, HOME_URL, BASE_URL
+BASE_URL = "https://webscraper.io/"
+MAIN_URL = "test-sites/e-commerce/more"
+HOME_URL = urljoin(BASE_URL, MAIN_URL)
+DRIVER_PATH = (
+    "/home/zhukov/applications/chrome_driver/chromedriver_linux64/chromedriver"
+)
 
 
 @dataclass
@@ -23,12 +28,11 @@ class Product:
     num_of_reviews: int
 
 
-def get_links(soup: BeautifulSoup, search_by: str = None) -> list[str]:
-    if search_by:
-        return [
-            link.get("href") for link in soup.select(f"a[href*={search_by}]")
-        ]
-    links = soup.select("a[href]")
+def get_links(soup: BeautifulSoup, exclude: str = None) -> list[str]:
+    if exclude:
+        links = soup.select(f"li:not({exclude}) > a")
+    else:
+        links = soup.select("a[href]")
     return [link.get("href") for link in links]
 
 
@@ -40,9 +44,9 @@ def get_soup_object(url: str) -> BeautifulSoup:
 
 def create_product(product: BeautifulSoup) -> Product:
     title = product.select_one(".title").get("title")
-    description = product.select_one(".description").text
+    description = product.select_one(".description").text.replace("\xa0", " ")
     price = float(product.select_one(".price").text.replace("$", ""))
-    rating = len(product.select("div.ratings > span"))
+    rating = len(product.select("span.glyphicon-star"))
     num_of_reviews = int(
         product.select_one("div.ratings > p.pull-right").text.split()[0]
     )
@@ -59,7 +63,7 @@ def create_product(product: BeautifulSoup) -> Product:
 
 
 def parse_page(
-        soup: BeautifulSoup, tag: str, selector_type: str, selector_name: str
+    soup: BeautifulSoup, tag: str, selector_type: str, selector_name: str
 ):
     products = soup.find_all(tag, {selector_type: selector_name})
     return [create_product(product) for product in products]
@@ -69,7 +73,7 @@ def write_to_csv(products: list, filename: str):
     with open(filename, mode="w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(
-            ["Title", "Description", "Price", "Rating", "Number of Reviews"]
+            ["title", "description", "price", "rating", "num_of_reviews"]
         )
         for product in products:
             writer.writerow(
@@ -84,7 +88,7 @@ def write_to_csv(products: list, filename: str):
 
 
 def click_button(
-        driver: webdriver, button_selector: str, wait_for_selector: str = None
+    driver: webdriver, button_selector: str, wait_for_selector: str = None
 ) -> None:
     more_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, button_selector))
@@ -112,24 +116,27 @@ def get_all_products() -> None:
         selector_type="class",
         selector_name="thumbnail",
     )
-
-    computer_page_link = urljoin(
-        HOME_URL, get_links(home_page_soup, search_by="computers")[0]
-    )
-    computer_page_soup = get_soup_object(computer_page_link)
-    comp_sublinks = get_links(computer_page_soup.select_one(".nav-second-level"), )
-    computer_products = parse_page(
-        soup=computer_page_soup,
-        tag="div",
-        selector_type="class",
-        selector_name="thumbnail",
-    )
     write_to_csv(home_products, "home.csv")
-    write_to_csv(computer_products, "computer.csv")
+    side_bar = home_page_soup.select_one("#side-menu")
+    side_bar_links = get_links(side_bar, exclude=".active")
+
+    sublinks = []
+    for link in side_bar_links:
+        url = urljoin(BASE_URL, link)
+        soup = get_soup_object(url)
+        sublinks.extend(get_links(soup.select_one(".nav-second-level")))
+        products = parse_page(
+            soup=soup,
+            tag="div",
+            selector_type="class",
+            selector_name="thumbnail",
+        )
+
+        write_to_csv(products, f"{link.split('/')[-1]}.csv")
 
     driver = create_web_driver(DRIVER_PATH)
-    for link in comp_sublinks:
-        url = urljoin(BASE_URL, link)
+    for sublink in sublinks:
+        url = urljoin(BASE_URL, sublink)
         driver.get(url)
         try:
             click_button(driver, ".acceptCookies")
@@ -137,7 +144,9 @@ def get_all_products() -> None:
             print(err)
         while True:
             try:
-                click_button(driver, ".ecomerce-items-scroll-more", "div.thumbnail")
+                click_button(
+                    driver, ".ecomerce-items-scroll-more", "div.thumbnail"
+                )
             except:
                 break
         page_source = driver.page_source
@@ -148,7 +157,7 @@ def get_all_products() -> None:
             selector_type="class",
             selector_name="thumbnail",
         )
-        file_name = link.split("/")[-1]
+        file_name = sublink.split("/")[-1]
         write_to_csv(products, f"{file_name}.csv")
 
 
