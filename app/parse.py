@@ -31,7 +31,7 @@ class Product:
     num_of_reviews: int
 
 
-def click_more_button(url: str, driver: WebDriver):
+def click_more_button(url: str, driver: WebDriver) -> list:
     driver.get(url)
     more_button = None
     try:
@@ -39,7 +39,10 @@ def click_more_button(url: str, driver: WebDriver):
     except Exception as error:
         print(error)
     try:
-        more_button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+        more_button = driver.find_element(
+            By.CLASS_NAME,
+            "ecomerce-items-scroll-more"
+        )
     except Exception as error:
         print(error)
 
@@ -53,10 +56,11 @@ def click_more_button(url: str, driver: WebDriver):
     return [parse_single_product(product) for product in products]
 
 
-def parse_single_product(product_soup: Tag):
+def parse_single_product(product_soup: Tag) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text.replace("\xa0", " "),
+        description=product_soup.select_one(
+            ".description").text.replace("\xa0", " "),
         price=float(product_soup.select_one(".price").text.replace("$", "")),
         rating=len(product_soup.select("span.glyphicon-star")),
         num_of_reviews=int(product_soup.select_one(
@@ -76,7 +80,7 @@ def get_all_products() -> None:
             write_data_to_csv(products, f"{title}.csv")
 
 
-def write_data_to_csv(products: list[Product], file_name: str):
+def write_data_to_csv(products: list[Product], file_name: str) -> None:
     with open(file_name, "w", encoding="utf-8") as file:
         csv_file = csv.writer(file)
         csv_file.writerow(
