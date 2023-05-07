@@ -68,7 +68,6 @@ def get_products_on_page(driver: webdriver) -> list[Product]:
     for product_element in product_elements:
         product = get_single_product(product_element)
         products.append(product)
-
     return products
 
 
@@ -95,10 +94,8 @@ def get_all_products() -> None:
     driver = get_driver(headless=False)
     driver.implicitly_wait(1)
     driver.get(HOME_URL)
-
     homepage_products = get_products_on_page(driver)
     write_to_csv("home.csv", homepage_products)
-
     categories = ("Computers", "Tablets", "Laptops", "Phones", "Touch")
 
     for category in categories:
