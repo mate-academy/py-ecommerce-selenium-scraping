@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -46,11 +47,15 @@ def get_url(path: str = None, base_url: str = HOME_URL) -> str:
 def parse_single_product(product: BeautifulSoup) -> Product:
     title = product.select_one(".title")["title"],
     description = product.select_one(".description").text,
-    price = float(product.select_one(".caption"
-                                     ).text.split()[0].replace("$", "")
-                  ),
-    rating = int(product.select_one("p[data-rating]")["data-rating"]),
-    num_of_reviews = int(product.select_one(".ratings").text.split()[0])
+    price = float(
+        product.select_one(".caption").text.split()[0].replace("$", "")
+    ),
+    rating = int(
+        product.select_one("p[data-rating]")["data-rating"]
+    ),
+    num_of_reviews = int(
+        product.select_one(".ratings").text.split()[0]
+    )
     return Product(
         title=title,
         description=description,
@@ -61,18 +66,20 @@ def parse_single_product(product: BeautifulSoup) -> Product:
 
 def parse_single_product_with_driver(product: WebElement) -> Product:
     title = product.find_element(
-        By.CSS_SELECTOR, ".title").get_attribute("title"
-                                                 )
+        By.CSS_SELECTOR, ".title"
+    ).get_attribute("title")
     description = product.find_element(
         By.CSS_SELECTOR, ".description"
     ).text
-    price = float(product.find_element(By.CSS_SELECTOR, ".caption"
-                                       ).text.split()[0].replace("$", ""))
+    price = float(product.find_element(
+        By.CSS_SELECTOR, ".caption"
+    ).text.split()[0].replace("$", ""))
     rating = len(product.find_elements(
         By.CSS_SELECTOR, ".ratings span.glyphicon-star")
     )
     num_of_reviews = int(
-        product.find_element(By.CSS_SELECTOR, ".ratings").text.split()[0]
+        product.find_element(
+            By.CSS_SELECTOR, ".ratings").text.split()[0]
     )
     return Product(
         title=title,
@@ -143,36 +150,39 @@ def write_products_to_csv(
 
 
 def get_all_products() -> None:
-    home = parse_products()
-    write_products_to_csv("home.csv", home)
-
-    computers = parse_products(endpoint="computers")
-    write_products_to_csv("computers.csv", computers)
-
-    phones = parse_products(endpoint="phones")
-    write_products_to_csv("phones.csv", phones)
+    endpoints = {
+        "home": "home.csv",
+        "computers": "computers.csv",
+        "phones": "phones.csv",
+        "phones/touch": "touch.csv",
+        "computers/laptops": "laptops.csv",
+        "computers/tablets": "tablets.csv"
+    }
 
     with WebDriver() as driver:
         driver.get(HOME_URL)
-        accept_cookies_button = driver.find_element(
-            By.CLASS_NAME, "acceptCookies"
-        )
-        accept_cookies_button.click()
+        try:
+            accept_cookies_button = driver.find_element(
+                By.CLASS_NAME, "acceptCookies"
+            )
+            accept_cookies_button.click()
+        except NoSuchElementException:
+            pass
 
-        touch = get_product_with_pagination(
-            driver, endpoint="phones/touch"
-        )
-        write_products_to_csv("touch.csv", touch)
-
-        laptops = get_product_with_pagination(
-            driver, endpoint="computers/laptops"
-        )
-        write_products_to_csv("laptops.csv", laptops)
-
-        tablets = get_product_with_pagination(
-            driver, endpoint="computers/tablets"
-        )
-        write_products_to_csv("tablets.csv", tablets)
+        for endpoint, file_name in endpoints.items():
+            if endpoint in [
+                "phones/touch",
+                "computers/laptops",
+                "computers/tablets"
+            ]:
+                product = get_product_with_pagination(
+                    driver,
+                    endpoint=endpoint
+                )
+                write_products_to_csv(file_name, product)
+            else:
+                products = parse_products(endpoint=endpoint)
+                write_products_to_csv(file_name, products)
 
 
 if __name__ == "__main__":
