@@ -9,19 +9,13 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
 BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-COMPUTERS_URL = urljoin(HOME_URL, "computers/")
-LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
-TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
-PHONES_URL = urljoin(HOME_URL, "phones/")
-TOUCH_URL = urljoin(PHONES_URL, "touch")
 URLS = {
-    "home": HOME_URL,
-    "computers": COMPUTERS_URL,
-    "laptops": LAPTOPS_URL,
-    "tablets": TABLETS_URL,
-    "phones": PHONES_URL,
-    "touch": TOUCH_URL,
+    "home": urljoin(BASE_URL, "test-sites/e-commerce/more/"),
+    "computers": urljoin(BASE_URL, "test-sites/e-commerce/computers/"),
+    "laptops": urljoin(BASE_URL, "test-sites/e-commerce/laptops"),
+    "tablets": urljoin(BASE_URL, "test-sites/e-commerce/tablets"),
+    "phones": urljoin(BASE_URL, "test-sites/e-commerce/phones/"),
+    "touch": urljoin(BASE_URL, "test-sites/e-commerce/touch"),
 }
 
 
