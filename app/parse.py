@@ -7,8 +7,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from urllib.parse import urljoin
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+HOME_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 COMPUTERS_URL = urljoin(HOME_URL, "computers/")
 LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
 TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
@@ -62,7 +61,6 @@ def write_csv_files(file_name: str, products: list[Product]) -> None:
 
 def get_all_products() -> None:
     urls = {k: v for k, v in globals().items() if "URL" in k}
-    urls.pop("BASE_URL")
 
     for file_name, url in urls.items():
         with set_driver() as driver:
