@@ -34,17 +34,25 @@ def parse_page(products: list[webdriver]) -> list[Product]:
     products_list = []
 
     for product in products:
-        products_list.append(Product(
-            title=product.find_element(
-                By.CLASS_NAME, "title").get_attribute("title"),
-            description=product.find_element(
-                By.CLASS_NAME, "description").text,
-            price=float(product.find_element(
-                By.CLASS_NAME, "price").text.replace("$", "")),
-            rating=len(product.find_elements(By.CLASS_NAME, "glyphicon")),
-            num_of_reviews=int(product.find_element(
-                By.CLASS_NAME, "ratings").text.split()[0]),
-        ))
+        products_list.append(
+            Product(
+                title=product.find_element(By.CLASS_NAME, "title")
+                .get_attribute("title"),
+                description=product.find_element(By.CLASS_NAME, "description")
+                .text,
+                price=float(
+                    product.find_element(By.CLASS_NAME, "price")
+                    .text.replace("$", "")
+                ),
+                rating=len(
+                    product.find_elements(By.CLASS_NAME, "glyphicon")
+                ),
+                num_of_reviews=int(
+                    product.find_element(By.CLASS_NAME, "ratings")
+                    .text.split()[0]
+                )
+            )
+        )
 
     return products_list
 
