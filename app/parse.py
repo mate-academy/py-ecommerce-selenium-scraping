@@ -5,11 +5,9 @@ from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
-
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+HOME_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 URLS = [
     (HOME_URL, "home"),
     (urljoin(HOME_URL, "computers"), "computers"),
@@ -29,7 +27,8 @@ class Product:
     num_of_reviews: int
 
 
-def get_content(driver, button=None):
+def get_content(driver: webdriver) -> str:
+    button = None
     try:
         driver.find_element(By.CLASS_NAME, "acceptCookies").click()
     except NoSuchElementException:
@@ -47,7 +46,7 @@ def get_content(driver, button=None):
     return driver.page_source
 
 
-def parse_one_item(item):
+def parse_one_item(item: Tag) -> Product:
     return Product(
         title=item.select_one(".caption > h4:nth-of-type(2)").text,
         description=item.select_one(".description").text,
@@ -73,6 +72,8 @@ def get_all_products() -> None:
             for item in items:
                 prod_ins = parse_one_item(item)
                 writer.writerow(tuple(prod_ins.__dict__.values()))
+
+    driver.close()
 
 
 if __name__ == "__main__":
