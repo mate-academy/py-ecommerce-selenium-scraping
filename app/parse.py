@@ -1,6 +1,5 @@
 import csv
 import time
-from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.common import (
     NoSuchElementException,
@@ -13,20 +12,25 @@ from dataclasses import dataclass, fields
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-PHONES_URL = urljoin(HOME_URL, "phones/")
-TOUCH_URL = urljoin(PHONES_URL, "touch")
-COMPUTERS_URL = urljoin(HOME_URL, "computers/")
-TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
-LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
+
 URLS = {
-    "home": HOME_URL,
-    "phones": PHONES_URL,
-    "touch": TOUCH_URL,
-    "computers": COMPUTERS_URL,
-    "tablets": TABLETS_URL,
-    "laptops": LAPTOPS_URL,
+    "home": "https://webscraper.io/test-sites/"
+    "e-commerce/more",
+
+    "phones": "https://webscraper.io/test-sites/"
+    "e-commerce/more/phones",
+
+    "touch": "https://webscraper.io/test-sites/"
+    "e-commerce/more/phones/touch",
+
+    "computers": "https://webscraper.io/test-sites/"
+    "e-commerce/more/computers",
+
+    "tablets": "https://webscraper.io/test-sites/"
+    "e-commerce/more/computers/tablets",
+
+    "laptops": "https://webscraper.io/test-sites/"
+    "e-commerce/more/computers/laptops",
 }
 
 
@@ -106,7 +110,7 @@ def get_all_products_from_one_page(
 
 def get_driver() -> webdriver:
     service = Service("/usr/local/bin/chromedriver")
-    options = Options().add_argument("--headless")
+    options = Options().add_argument("headless")
     driver = webdriver.Chrome(service=service, options=options)
     return driver
 
