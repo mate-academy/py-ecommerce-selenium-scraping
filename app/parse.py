@@ -11,8 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.remote.webelement import WebElement
 
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+HOME_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 URLS = [
     [HOME_URL, "home"],
     [urljoin(HOME_URL, "computers"), "computers"],
@@ -33,7 +32,7 @@ class Product:
     num_of_reviews: int
 
 
-def get_all_data(driver: webdriver, url: str) -> None:
+def get_all_data(driver: webdriver, url: str) -> webdriver:
     driver.get(url)
     try:
         driver.find_element(By.CLASS_NAME, "acceptCookies").click()
