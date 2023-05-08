@@ -55,9 +55,7 @@ def parse_products(path=None):
 def parse_single_product(product: BeautifulSoup) -> Product:
     title = product.select_one(".title")["title"],
     description = product.select_one(".description").text,
-    price = float(product.select_one(".caption"
-                                     ).text.split()[0].replace("$", "")
-                  ),
+    price = float(product.select_one(".caption").text.split()[0].replace("$", "")),
     rating = int(product.select_one("p[data-rating]")["data-rating"]),
     num_of_reviews = int(product.select_one(".ratings").text.split()[0])
     return Product(
@@ -69,14 +67,13 @@ def parse_single_product(product: BeautifulSoup) -> Product:
 
 
 def parse_single_product_with_driver(product: WebElement) -> Product:
-    title = product.find_element(
-        By.CSS_SELECTOR, ".title").get_attribute("title"
-                                                 )
+    title = product.find_element(By.CSS_SELECTOR, ".title").get_attribute("title")
     description = product.find_element(
         By.CSS_SELECTOR, ".description"
     ).text
-    price = float(product.find_element(By.CSS_SELECTOR, ".caption"
-                                       ).text.split()[0].replace("$", ""))
+    price = float(product.find_element(
+        By.CSS_SELECTOR, ".caption"
+    ).text.split()[0].replace("$", ""))
     rating = len(product.find_elements(
         By.CSS_SELECTOR, ".ratings span.glyphicon-star")
     )
@@ -92,7 +89,7 @@ def parse_single_product_with_driver(product: WebElement) -> Product:
 
 
 def get_product_with_pagination(driver: WebDriver,
-                                endpoint: str):
+                                endpoint: str) -> list[Product]:
     url = get_url(endpoint)
     driver.get(url)
     while True:
@@ -135,14 +132,21 @@ def write_products_to_csv(output_csv_path: str,
 
 
 def get_all_products() -> None:
-    home = parse_products()
-    write_products_to_csv("home.csv", home)
+    pages_without_pagination = {
+        "home": "home.csv",
+        "computers": "computers.csv",
+        "phones": "phones.csv"
+    }
 
-    computers = parse_products(path="computers")
-    write_products_to_csv("computers.csv", computers)
+    pages_with_pagination = {
+        "phones/touch": "touch.csv",
+        "computers/laptops": "laptops.csv",
+        "computers/tablets": "tablets.csv"
+    }
 
-    phones = parse_products(path="phones")
-    write_products_to_csv("phones.csv", phones)
+    for path, filename in pages_without_pagination.items():
+        products = parse_products(path=path)
+        write_products_to_csv(filename, products)
 
     with WebDriver() as driver:
         driver.get(HOME_URL)
@@ -151,20 +155,9 @@ def get_all_products() -> None:
         )
         accept_cookies_button.click()
 
-        touch = get_product_with_pagination(
-            driver, endpoint="phones/touch"
-        )
-        write_products_to_csv("touch.csv", touch)
-
-        laptops = get_product_with_pagination(
-            driver, endpoint="computers/laptops"
-        )
-        write_products_to_csv("laptops.csv", laptops)
-
-        tablets = get_product_with_pagination(
-            driver, endpoint="computers/tablets"
-        )
-        write_products_to_csv("tablets.csv", tablets)
+        for path, filename in pages_with_pagination.items():
+            products = get_product_with_pagination(driver, endpoint=path)
+            write_products_to_csv(filename, products)
 
 
 if __name__ == "__main__":
