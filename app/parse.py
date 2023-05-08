@@ -13,8 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+HOME_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 
 PAGES = [
     {"name": "home", "url": HOME_URL},
