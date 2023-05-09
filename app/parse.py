@@ -84,7 +84,7 @@ def get_all_products() -> None:
 
     with webdriver.Chrome(options=options) as driver:
         for page_title, url in URLS.items():
-            products = press_more_buttun(url, driver)
+            products = get_all_data_pages(url, driver)
             csv_data_file_create(f"{page_title}.csv", products)
 
 
