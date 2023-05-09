@@ -10,8 +10,8 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+
+HOME_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 URLS = {
     "home": HOME_URL,
     "computers": urljoin(HOME_URL, "computers"),
@@ -40,7 +40,8 @@ def parse_single_product(product: Tag) -> Product:
         num_of_reviews=int(product.select_one(".ratings > p").text.split()[0])
     )
 
-def press_more_buttun(url: str, driver: WebDriver) -> list[Product]:
+
+def get_all_data_pages(url: str, driver: WebDriver) -> list[Product]:
     driver.get(url)
     scroll_button = None
 
