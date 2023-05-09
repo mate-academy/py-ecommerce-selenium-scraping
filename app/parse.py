@@ -13,14 +13,14 @@ from selenium.webdriver.common.by import By
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 MORE = "ecomerce-items-scroll-more"
-URLS = [
-    {"url": HOME_URL, "file_name": "home"},
-    {"url": urljoin(HOME_URL, "computers"), "file_name": "computers"},
-    {"url": urljoin(HOME_URL, "computers/laptops"), "file_name": "laptops"},
-    {"url": urljoin(HOME_URL, "computers/tablets"), "file_name": "tablets"},
-    {"url": urljoin(HOME_URL, "phones/"), "file_name": "phones"},
-    {"url": urljoin(HOME_URL, "phones/touch"), "file_name": "touch"},
-]
+URLS = {
+    "home": HOME_URL,
+    "computers": urljoin(HOME_URL, "computers"),
+    "laptops": urljoin(HOME_URL, "computers/laptops"),
+    "tablets": urljoin(HOME_URL, "computers/tablets"),
+    "phones": urljoin(HOME_URL, "phones/"),
+    "touch": urljoin(HOME_URL, "phones/touch"),
+}
 
 
 @dataclass
@@ -73,9 +73,7 @@ def write_products_to_file(products: List[Product], filename: str) -> None:
 def get_all_products() -> None:
     driver = get_chrome_driver()
     with driver:
-        for url_dict in URLS:
-            url = url_dict["url"]
-            file_name = url_dict["file_name"]
+        for file_name, url in URLS.items():
             print(f"Parsing data from {url}")
             page = show_more_products(driver, url)
             products = get_products_from_page(page)
