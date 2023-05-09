@@ -11,28 +11,15 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 
 BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
-TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets")
-LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops")
-PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
-TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
 
-HOME_OUTPUT_CSV_PATH = "home.csv"
-COMPUTERS_OUTPUT_CSV_PATH = "computers.csv"
-TABLETS_OUTPUT_CSV_PATH = "tablets.csv"
-LAPTOPS_OUTPUT_CSV_PATH = "laptops.csv"
-PHONES_OUTPUT_CSV_PATH = "phones.csv"
-TOUCH_OUTPUT_CSV_PATH = "touch.csv"
-
-URLS = [
-    (HOME_URL, HOME_OUTPUT_CSV_PATH),
-    (COMPUTERS_URL, COMPUTERS_OUTPUT_CSV_PATH),
-    (TABLETS_URL, TABLETS_OUTPUT_CSV_PATH),
-    (LAPTOPS_URL, LAPTOPS_OUTPUT_CSV_PATH),
-    (PHONES_URL, PHONES_OUTPUT_CSV_PATH),
-    (TOUCH_URL, TOUCH_OUTPUT_CSV_PATH),
-]
+URLS = {
+    "home.csv": urljoin(BASE_URL, "test-sites/e-commerce/more/"),
+    "computers.csv": urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
+    "laptops.csv": urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops"),
+    "tablets.csv": urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets"),
+    "phones.csv": urljoin(BASE_URL, "test-sites/e-commerce/more/phones"),
+    "touch.csv": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+}
 
 
 _driver: WebDriver | None = None
@@ -124,7 +111,7 @@ def click_more(driver: webdriver) -> None:
 
 def get_all_products() -> None:
     driver = get_driver()
-    for url, output_path in URLS:
+    for output_path, url in URLS.items():
         driver.get(url)
         accept_cookies(driver)
         click_more(driver)
@@ -136,7 +123,7 @@ def get_all_products() -> None:
 
 
 def write_products_to_csv(products: [Product], output_path: str) -> None:
-    with open(output_path, "w") as file:
+    with open(output_path, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(PRODUCT_FIELDS)
         writer.writerows([astuple(product) for product in products])
