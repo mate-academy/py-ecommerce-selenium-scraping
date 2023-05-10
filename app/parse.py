@@ -13,8 +13,6 @@ from selenium.common import (
 )
 
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 SERVICE = ("/Users/bohdan_lysachenko/PycharmProjects/"
            "py-ecommerce-selenium-scraping/chromedriver_mac64/chromedriver")
 
