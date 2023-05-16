@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 
@@ -38,20 +39,6 @@ class Product:
     num_of_reviews: int
 
 
-PRODUCT_FIELDS = [field.name for field in fields(Product)]
-
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
-
 def parse_single_product(product_soup: BeautifulSoup) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
@@ -65,8 +52,7 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
     )
 
 
-def get_single_page_products(url: str) -> list[Product]:
-    driver = get_driver()
+def get_single_page_products(url: str, driver: WebDriver) -> list[Product]:
     driver.get(url)
 
     try:
@@ -75,8 +61,8 @@ def get_single_page_products(url: str) -> list[Product]:
         )
         if accept_cookies_button:
             accept_cookies_button.click()
-    except Exception:
-        pass
+    except NoSuchElementException as e:
+        print(f"Unable to locate element{e}")
 
     try:
         more_button = driver.find_element(
@@ -85,8 +71,8 @@ def get_single_page_products(url: str) -> list[Product]:
         if more_button:
             while not more_button.value_of_css_property("display") == "none":
                 more_button.click()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"No such element: {e}")
 
     page = driver.page_source
     page_soup = BeautifulSoup(page, "html.parser")
@@ -99,15 +85,14 @@ def get_single_page_products(url: str) -> list[Product]:
 def write_products_to_csv(products: list[Product], product_name: str) -> None:
     with open(PRODUCTS_CSV_PATHS[product_name], "w") as file:
         writer = csv.writer(file)
-        writer.writerow(PRODUCT_FIELDS)
+        writer.writerow([field.name for field in fields(Product)])
         writer.writerows(astuple(product) for product in products)
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
+    with webdriver.Chrome() as driver:
         for product_name, path in URLS.items():
-            products = get_single_page_products(path)
+            products = get_single_page_products(path, driver)
             write_products_to_csv(products, product_name)
 
 
