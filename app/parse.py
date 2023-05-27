@@ -4,7 +4,7 @@ from time import sleep
 from urllib.parse import urljoin
 
 from selenium.common import NoSuchElementException
-from selenium.webdriver.chrome import webdriver
+from selenium import webdriver
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
