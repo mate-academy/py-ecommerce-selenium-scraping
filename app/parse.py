@@ -9,11 +9,11 @@ from selenium.webdriver.remote.webelement import WebElement
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = BASE_URL + "test-sites/e-commerce/more/"
-COMPUTERS_URL = BASE_URL + "test-sites/e-commerce/more/computers"
-LAPTOP_URL = BASE_URL + "test-sites/e-commerce/more/computers/laptops"
-TABLETS_URL = BASE_URL + "test-sites/e-commerce/more/computers/tablets"
-PHONES_URL = BASE_URL + "test-sites/e-commerce/more/phones"
-TOUCH_URL = BASE_URL + "test-sites/e-commerce/more/phones/touch"
+COMPUTERS_URL = HOME_URL + "computers"
+LAPTOP_URL = HOME_URL + "computers/laptops"
+TABLETS_URL = HOME_URL + "computers/tablets"
+PHONES_URL = HOME_URL + "phones"
+TOUCH_URL = HOME_URL + "phones/touch"
 
 URL_FILE_MAP = {
     HOME_URL: "home.csv",
