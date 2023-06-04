@@ -27,16 +27,9 @@ URLS_AND_FILES = {
 }
 
 
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
+class Driver(object):
+    def __init__(self, driver: WebDriver):
+        self.driver = driver
 
 
 @dataclass
@@ -70,23 +63,22 @@ def parse_single_product(product: WebElement) -> Product:
     )
 
 
-def get_all_url_products(page_url: str) -> list[WebElement]:
-    driver = get_driver()
-    driver.get(page_url)
+def get_all_url_products(page_url: str, driver_instance: Driver) -> list[WebElement]:
+    driver_instance.driver.get(page_url)
     sleep(2)
 
     try:
-        driver.find_element(By.ID, "closeCookieBanner").click()
+        driver_instance.driver.find_element(By.ID, "closeCookieBanner").click()
     except NoSuchElementException:
         pass
     sleep(2)
     while True:
         try:
-            driver.find_element(By.LINK_TEXT, "More").click()
+            driver_instance.driver.find_element(By.LINK_TEXT, "More").click()
         except NoSuchElementException:
             break
 
-    products = driver.find_elements(By.CLASS_NAME, "thumbnail")
+    products = driver_instance.driver.find_elements(By.CLASS_NAME, "thumbnail")
     return products
 
 
@@ -98,10 +90,10 @@ def write_products_to_csv(path: str, products: [Product]) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Firefox() as new_driver:
-        set_driver(new_driver)
+    with webdriver.Firefox() as driver:
+        driver_instance = Driver(driver)
         for url, path in URLS_AND_FILES.items():
-            products = get_all_url_products(url)
+            products = get_all_url_products(url, driver_instance)
             all_products = []
             for product in products:
                 all_products.append(parse_single_product(product))
