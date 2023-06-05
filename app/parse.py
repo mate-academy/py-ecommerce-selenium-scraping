@@ -70,7 +70,7 @@ def get_all_url_products(page_url: str, driver_instance: Driver) -> list[WebElem
     try:
         driver_instance.driver.find_element(By.ID, "closeCookieBanner").click()
     except NoSuchElementException:
-        pass
+        print("Could not find element in page_url")
     sleep(2)
     while True:
         try:
@@ -94,9 +94,7 @@ def get_all_products() -> None:
         driver_instance = Driver(driver)
         for url, path in URLS_AND_FILES.items():
             products = get_all_url_products(url, driver_instance)
-            all_products = []
-            for product in products:
-                all_products.append(parse_single_product(product))
+            all_products = [parse_single_product(product) for product in products]
             write_products_to_csv(path, all_products)
 
 
