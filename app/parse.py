@@ -1,36 +1,37 @@
+import csv
 import time
 from dataclasses import dataclass
 from urllib.parse import urljoin
-
-import requests
+from selenium.webdriver.support import expected_conditions as ec
 from bs4 import BeautifulSoup
-from selenium.common import NoSuchElementException
+from selenium.common import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from tqdm import tqdm
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-
 BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
+HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+PRODUCT_FIELDS = ["title", "description", "price", "rating", "num_of_reviews"]
 
 
 class Driver:
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> "Driver":
         if not isinstance(Driver._instance, Driver):
             Driver._instance = object.__new__(Driver)
         return Driver._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         self.driver = webdriver.Chrome(options=chrome_options)
 
-    def closed(self):
+    def closed(self) -> None:
         self.driver.quit()
 
 
@@ -43,47 +44,60 @@ class Product:
     num_of_reviews: int
 
 
-def click_button_more(browser: Driver):
-    try:
-        # initial_num_products = len(
-        #     browser.driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
-        # )
-        button = browser.driver.find_element(
-            By.CSS_SELECTOR,
-            "a.ecomerce-items-scroll-more",
+def click_button_more(browser: Driver) -> str:
+    while True:
+        updated_html = browser.driver.page_source
+        try:
+            button = browser.driver.find_element(
+                By.CSS_SELECTOR, "a.ecomerce-items-scroll-more"
+            )
+            if button.is_displayed():
+                browser.driver.execute_script(
+                    "arguments[0].scrollIntoView(true);", button
+                )
+                browser.driver.execute_script("arguments[0].click();", button)
+                WebDriverWait(browser.driver, 10).until(
+                    ec.presence_of_element_located(
+                        (
+                            By.CSS_SELECTOR,
+                            "div.ecomerce-items[data-type='more']",
+                        )
+                    )
+                )
+                time.sleep(1)
+            else:
+                break
+        except (NoSuchElementException, StaleElementReferenceException):
+            break
+    return updated_html
+
+
+def side_bar_buttons(browser: Driver) -> list[str]:
+    categories = browser.driver.find_elements(
+        By.CSS_SELECTOR, "#side-menu > li > a"
+    )
+    category_links = [
+        category.get_attribute("href") for category in categories
+    ]
+    return category_links
+
+
+def subcategory_buttons(browser: Driver) -> list[str]:
+    categories = side_bar_buttons(browser)
+    subcategory_links = []
+    for category in categories:
+        browser.driver.get(category)
+        subcategory = browser.driver.find_elements(
+            By.CSS_SELECTOR, ".nav-second-level > li > a"
         )
-        browser.driver.execute_script(
-            "arguments[0].scrollIntoView(true);", button
+        subcategory_links.extend(
+            [link.get_attribute("href") for link in subcategory]
         )
-        browser.driver.execute_script("arguments[0].click();", button)
-        wait = WebDriverWait(browser.driver, 10)
-        g = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".thumbnail")))
-        print(g)
-
-    except NoSuchElementException:
-        return None
+    return subcategory_links
 
 
-def click_side_bar_button(browser: Driver):
-    all_path = []
-    try:
-        button = browser.driver.find_element(
-            By.CSS_SELECTOR,
-            "a.category-link",
-        )
-        all_path.append(button.get_attribute("href"))
-        button.click()
-    except NoSuchElementException:
-        pass
-
-
-def parse_all_products() -> list[Product]:
-    url = HOME_URL
-    browser = Driver()
-    browser.driver.get(url)
-    click_button_more(browser)
-    updated_html = browser.driver.page_source
-
+def parse_all_products(browser: Driver) -> list[Product]:
+    updated_html = click_button_more(browser)
     soup = BeautifulSoup(updated_html, "html.parser")
     products = soup.select(".thumbnail")
 
@@ -106,12 +120,42 @@ def parse_all_products() -> list[Product]:
 
 
 def get_all_products() -> None:
-    pass
-    # url = HOME_URL
-    # browser = Driver()
-    # browser.driver.get(url)
-    # parse_all_products(browser)
+    url = HOME_URL
+    browser = Driver()
+    browser.driver.get(url)
+    subcategory = subcategory_buttons(browser)
+    categories = side_bar_buttons(browser)
+    for link in categories:
+        name_category = link.split("/")[-1]
+        if name_category == "more":
+            name_category = "home"
+        browser.driver.get(link)
+        parse_results = parse_all_products(browser)
+        write_file_csv(name_category, parse_results)
+
+    for link in subcategory:
+        name_subcategory = link.split("/")[-1]
+        browser.driver.get(link)
+        parse_results = parse_all_products(browser)
+        write_file_csv(name_subcategory, parse_results)
+
+
+def write_file_csv(name: str, parse_results: list[Product]) -> None:
+    with open(f"{name}.csv", "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(PRODUCT_FIELDS)
+        for parse in parse_results:
+            description = parse.description.replace("\xa0", " ")
+            writer.writerow(
+                [
+                    parse.title,
+                    description,
+                    parse.price,
+                    parse.rating,
+                    parse.num_of_reviews,
+                ]
+            )
 
 
 if __name__ == "__main__":
-    print(len(parse_all_products()))
+    get_all_products()
