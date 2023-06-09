@@ -19,13 +19,6 @@ PRODUCT_FIELDS = ["title", "description", "price", "rating", "num_of_reviews"]
 
 
 class Driver:
-    _instance = None
-
-    def __new__(cls, *args, **kwargs) -> "Driver":
-        if not isinstance(Driver._instance, Driver):
-            Driver._instance = object.__new__(Driver)
-        return Driver._instance
-
     def __init__(self) -> None:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
