@@ -4,10 +4,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-
-
 class WebDriverSingleton:
     _instance: Optional[webdriver.Chrome] = None
 
@@ -24,9 +20,9 @@ class WebDriverSingleton:
                 "Use the get_instance() method to retrieve an instance."
             )
         else:
-            WebDriverSingleton._instance = webdriver.Chrome(
-                options=chrome_options
-            )
+            options = Options()
+            options.add_argument("--headless")
+            WebDriverSingleton._instance = webdriver.Chrome(options=options)
 
     @classmethod
     def close(cls) -> None:

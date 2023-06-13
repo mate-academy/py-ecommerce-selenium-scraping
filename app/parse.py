@@ -49,9 +49,17 @@ def parse_single_product(
                     By.CSS_SELECTOR, "a.ecomerce-items-scroll-more"
                 )
                 pagination.click()
-            except NoSuchElementException:
+            except NoSuchElementException as exc:
+                print(
+                    f"Something wrong with parse_single_product."
+                    f"See the message below:\n {exc}"
+                )
                 break
-            except ElementNotInteractableException:
+            except ElementNotInteractableException as exc:
+                print(
+                    f"Something wrong with parse_single_product."
+                    f"See the message below:\n {exc}"
+                )
                 break
 
         # find all products on page
