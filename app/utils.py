@@ -8,7 +8,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 class CustomDriver:
     class __CustomDriver:
-        def __init__(self):
+        def __init__(self) -> None:
             self.options = Options()
             self.options.add_argument("--headless")
             self.driver = webdriver.Chrome(
@@ -18,15 +18,15 @@ class CustomDriver:
 
     driver = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not self.driver:
             CustomDriver.driver = CustomDriver.__CustomDriver().driver
 
-    def get(self, url: str):
+    def get(self, url: str) -> None:
         self.driver.get(url)
         self.accept_cookie()
 
-    def click_more(self):
+    def click_more(self) -> None:
         try:
             btn_more = self.driver.find_element(
                 By.CLASS_NAME, "ecomerce-items-scroll-more"
@@ -37,7 +37,7 @@ class CustomDriver:
         except NoSuchElementException:
             pass
 
-    def close(self):
+    def close(self) -> None:
         self.driver.close()
 
     def accept_cookie(self) -> None:
@@ -46,5 +46,5 @@ class CustomDriver:
         except NoSuchElementException:
             pass
 
-    def page_source(self):
+    def page_source(self) -> str:
         return self.driver.page_source

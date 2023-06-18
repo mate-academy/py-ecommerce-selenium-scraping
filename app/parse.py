@@ -34,7 +34,7 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    # additional_info: dict
+    additional_info: dict
 
 
 def get_page_soup(url: str) -> BeautifulSoup:
@@ -42,56 +42,56 @@ def get_page_soup(url: str) -> BeautifulSoup:
     return BeautifulSoup(page, "html.parser")
 
 
-# def parse_hdd(driver: WebDriver) -> {str: float}:
-#     prices = {}
-#     try:
-#         swatches = driver.find_element(By.CLASS_NAME, "swatches")
-#         buttons = swatches.find_elements(By.TAG_NAME, "button")
-#         for button in buttons:
-#             if not button.get_property("disabled"):
-#                 button.click()
-#                 prices[button.get_property("value")] = float(
-#                     driver.find_element(By.CLASS_NAME, "price").text[1:]
-#                 )
-#     except NoSuchElementException:
-#         pass
-#     return prices
+def parse_hdd(driver: WebDriver) -> dict[str, float]:
+    prices = {}
+    try:
+        swatches = driver.find_element(By.CLASS_NAME, "swatches")
+        buttons = swatches.find_elements(By.TAG_NAME, "button")
+        for button in buttons:
+            if not button.get_property("disabled"):
+                button.click()
+                prices[button.get_property("value")] = float(
+                    driver.find_element(By.CLASS_NAME, "price").text[1:]
+                )
+    except NoSuchElementException:
+        pass
+    return prices
 
 
-# def parse_color(driver: WebDriver) -> {str: float}:
-#     colors = []
-#     try:
-#         dropdown_menu = driver.find_element(
-#             By.CLASS_NAME, "thumbnail"
-#         ).find_element(By.CLASS_NAME, "dropdown")
-#         options = dropdown_menu.find_elements(By.TAG_NAME, "option")
-#         for option in options:
-#             value = option.get_attribute("value")
-#             if value:
-#                 option.click()
-#                 colors.append(value)
-#     except NoSuchElementException:
-#         pass
-#     return colors
+def parse_color(driver: WebDriver) -> dict[str, float]:
+    colors = []
+    try:
+        dropdown_menu = driver.find_element(
+            By.CLASS_NAME, "thumbnail"
+        ).find_element(By.CLASS_NAME, "dropdown")
+        options = dropdown_menu.find_elements(By.TAG_NAME, "option")
+        for option in options:
+            value = option.get_attribute("value")
+            if value:
+                option.click()
+                colors.append(value)
+    except NoSuchElementException:
+        pass
+    return colors
 
 
-# def parse_additional_info(product: BeautifulSoup) -> {str: float}:
-#     additional_info = {}
-#     detailed_url = urljoin(
-#         BASE_URL,
-#         product.select_one("a")["href"],
-#     )
-#     my_driver = CustomDriver()
-#     my_driver.get(detailed_url)
-#
-#     hdd_prices = parse_hdd(my_driver.driver)
-#     colors = parse_color(my_driver.driver)
-#
-#     if hdd_prices:
-#         additional_info["hdd prices"] = hdd_prices
-#     if colors:
-#         additional_info["colors"] = colors
-#     return additional_info
+def parse_additional_info(product: BeautifulSoup) -> dict[str, float]:
+    additional_info = {}
+    detailed_url = urljoin(
+        BASE_URL,
+        product.select_one("a")["href"],
+    )
+    my_driver = CustomDriver()
+    my_driver.get(detailed_url)
+
+    hdd_prices = parse_hdd(my_driver.driver)
+    colors = parse_color(my_driver.driver)
+
+    if hdd_prices:
+        additional_info["hdd prices"] = hdd_prices
+    if colors:
+        additional_info["colors"] = colors
+    return additional_info
 
 
 def parse_product(product: BeautifulSoup) -> Product:
@@ -103,11 +103,11 @@ def parse_product(product: BeautifulSoup) -> Product:
         price=float(product.select_one(".price").text[1:]),
         rating=len(product.select(".glyphicon-star")),
         num_of_reviews=int(product.select_one(".ratings").text.split()[0]),
-        # additional_info=parse_additional_info(product),
+        additional_info=parse_additional_info(product),
     )
 
 
-def parse_page(key: str, link: str) -> [Product]:
+def parse_page(key: str, link: str) -> list[Product]:
     my_driver = CustomDriver()
     my_driver.get(link)
     my_driver.click_more()
@@ -119,7 +119,7 @@ def parse_page(key: str, link: str) -> [Product]:
     ]
 
 
-def get_obj_fields(obj: Type[Product]) -> [str]:
+def get_obj_fields(obj: Type[Product]) -> list[str]:
     return [field.name for field in fields(obj)]
 
 
@@ -133,7 +133,7 @@ def write_obj_to_csv(
         writer.writerows([astuple(obj) for obj in all_obj])
 
 
-def menu_links(url: str) -> [str]:
+def menu_links(url: str) -> dict[str, str]:
     links = {}
     menu = get_page_soup(url).select_one(".sidebar")
     a_links = menu.select("a")
