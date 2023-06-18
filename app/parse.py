@@ -7,7 +7,6 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from tqdm import tqdm
@@ -44,38 +43,36 @@ def get_page_soup(url: str) -> BeautifulSoup:
 
 def parse_hdd(driver: WebDriver) -> dict[str, float]:
     prices = {}
-    try:
-        swatches = driver.find_element(By.CLASS_NAME, "swatches")
-        buttons = swatches.find_elements(By.TAG_NAME, "button")
+    swatches = driver.find_elements(By.CLASS_NAME, "swatches")
+    if swatches:
+        buttons = swatches[0].find_elements(By.TAG_NAME, "button")
         for button in buttons:
             if not button.get_property("disabled"):
                 button.click()
                 prices[button.get_property("value")] = float(
                     driver.find_element(By.CLASS_NAME, "price").text[1:]
                 )
-    except NoSuchElementException:
-        pass
     return prices
 
 
-def parse_color(driver: WebDriver) -> dict[str, float]:
+def parse_color(driver: WebDriver) -> list[str]:
     colors = []
-    try:
-        dropdown_menu = driver.find_element(
-            By.CLASS_NAME, "thumbnail"
-        ).find_element(By.CLASS_NAME, "dropdown")
-        options = dropdown_menu.find_elements(By.TAG_NAME, "option")
-        for option in options:
-            value = option.get_attribute("value")
-            if value:
-                option.click()
-                colors.append(value)
-    except NoSuchElementException:
-        pass
+    thumbnails = driver.find_elements(By.CLASS_NAME, "thumbnail")
+    if thumbnails:
+        dropdown_menus = thumbnails[0].find_elements(By.CLASS_NAME, "dropdown")
+        if dropdown_menus:
+            options = dropdown_menus[0].find_elements(By.TAG_NAME, "option")
+            for option in options:
+                value = option.get_attribute("value")
+                if value:
+                    option.click()
+                    colors.append(value)
     return colors
 
 
-def parse_additional_info(product: BeautifulSoup) -> dict[str, float]:
+def parse_additional_info(
+    product: BeautifulSoup,
+) -> dict[str, dict[str, float] | list[str]]:
     additional_info = {}
     detailed_url = urljoin(
         BASE_URL,
