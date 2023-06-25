@@ -71,7 +71,10 @@ def get_all_products_list(soup: BeautifulSoup) -> list[Product]:
 def get_all_product_information(links: list) -> dict[list[Product]]:
     options = Options()
     options.add_argument("--headless")
+
     driver = webdriver.Firefox(options=options)
+    driver.options.add_argument("--disable-extensions")
+    driver.options.add_argument("--disable-popup-blocking")
 
     products = {}
 
