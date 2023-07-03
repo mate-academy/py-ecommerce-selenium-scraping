@@ -37,7 +37,7 @@ class Product:
     num_of_reviews: int
 
 
-def write_products_to_csv(output_csv_path: str, products: [Product]) -> None:
+def write_products_to_csv(output_csv_path: str, products: list[Product]) -> None:
     with open(output_csv_path, "w", encoding="utf-8", newline="") as file:
         header = ["title", "description", "price", "rating", "num_of_reviews"]
         writer = csv.writer(file)
@@ -59,7 +59,7 @@ def parse_single_product(element: WebElement) -> Product:
     )
 
 
-def get_products_from_page(driver: WebDriver) -> [Product]:
+def get_products_from_page(driver: WebDriver) -> list[Product]:
     try:
         banner = driver.find_element(By.ID, "cookieBanner")
         banner.find_element(By.CLASS_NAME, "acceptCookies").click()
