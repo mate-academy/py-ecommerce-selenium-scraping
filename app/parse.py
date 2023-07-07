@@ -29,7 +29,8 @@ class Product:
     rating: int
     num_of_reviews: int
 
-    def parse_single_product(self, product: Tag) -> Product:
+    @classmethod
+    def parse_single_product(cls, product: Tag) -> Product:
         return Product(
             title=product.select_one(".title")["title"],
             description=product.select_one(".description").text.replace(
@@ -42,8 +43,9 @@ class Product:
             ),
         )
 
+    @classmethod
     def get_page_products(
-        self, page_url: str, driver: WebDriver
+        cls, page_url: str, driver: WebDriver
     ) -> list[Product]:
         driver.get(page_url)
         cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
@@ -65,9 +67,7 @@ class Product:
 
         products = page_soup.select(".thumbnail")
 
-        return [
-            self.parse_single_product(self, product) for product in products
-        ]
+        return [cls.parse_single_product(product) for product in products]
 
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
@@ -84,7 +84,7 @@ def get_all_products() -> None:
     with webdriver.Chrome() as driver:
         for name, url in URLS.items():
             write_products_to_csv(
-                products=Product.get_page_products(Product, url, driver),
+                products=Product.get_page_products(url, driver),
                 output_csv_path=f"{name}.csv",
             )
 
