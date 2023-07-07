@@ -31,7 +31,7 @@ class Product:
 
     @classmethod
     def parse_single_product(cls, product: Tag) -> Product:
-        return Product(
+        return cls(
             title=product.select_one(".title")["title"],
             description=product.select_one(".description").text.replace(
                 "\xa0", " "
