@@ -21,18 +21,6 @@ class Product:
     num_of_reviews: int
 
 
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
-
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 
@@ -76,15 +64,14 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
     )
 
 
-def collect_one_page_products(url: str) -> [Product]:
+def collect_one_page_products(url: str) -> list[Product]:
     products_soup = get_page_soup(url)
     products = products_soup.select(".thumbnail")
 
     return [parse_single_product(product_soup) for product_soup in products]
 
 
-def click_more_btn(url: str) -> WebDriver:
-    driver = get_driver()
+def click_more_btn(url: str, driver: WebDriver) -> WebDriver:
     driver.get(url)
     driver.maximize_window()
 
@@ -111,17 +98,17 @@ def click_more_btn(url: str) -> WebDriver:
     return driver
 
 
-def collect_products(name: str, url: str) -> [Product]:
+def collect_products(name: str, url: str, driver: WebDriver) -> list[Product]:
     if name in ("home", "computers", "phones"):
         return collect_one_page_products(url)
 
-    driver = click_more_btn(url)
+    driver = click_more_btn(url, driver)
     soup = BeautifulSoup(driver.page_source, "html.parser")
     products = soup.select(".thumbnail")
     return [parse_single_product(product_soup) for product_soup in products]
 
 
-def write_products_to_csv(name: str, products: [Product]) -> None:
+def write_products_to_csv(name: str, products: list[Product]) -> None:
     with open(f"{name}.csv", "w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(PRODUCT_FIELDS)
@@ -129,12 +116,12 @@ def write_products_to_csv(name: str, products: [Product]) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-        pages = get_pages_for_parsing()
-        for name, url in pages.items():
-            products = collect_products(name, url)
-            write_products_to_csv(name, products)
+    driver = webdriver.Chrome()
+    pages = get_pages_for_parsing()
+    for name, url in pages.items():
+        products = collect_products(name, url, driver)
+        write_products_to_csv(name, products)
+    driver.close()
 
 
 if __name__ == "__main__":
