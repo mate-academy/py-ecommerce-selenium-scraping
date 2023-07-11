@@ -35,53 +35,37 @@ def get_all_products() -> None:
         {"url": "", "name": "home"},
         {"url": "computers", "name": "computers"},
         {"url": "phones", "name": "phones"},
-        {"url": "computers/laptops", "name": "laptops"},
-        {"url": "computers/tablets", "name": "tablets"},
-        {"url": "phones/touch", "name": "touch"}
+        {"url": "computers/laptops", "name": "laptops",
+         "additional_url": "test-sites/e-commerce/more/computers/laptops"},
+        {"url": "computers/tablets", "name": "tablets",
+         "additional_url": "test-sites/e-commerce/more/computers/tablets"},
+        {"url": "phones/touch", "name": "touch",
+         "additional_url": "test-sites/e-commerce/more/computers/touch"}
     ]
-
     options = Options()
     service = Service("path/to/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
 
-    for page in pages:
-        product_list = []
-        url = urljoin(HOME_URL, page["url"])
+    driver.get(HOME_URL)
+    time.sleep(2)
 
-        driver.get(url)
+    accept_cookies_button = driver.find_elements(
+        By.CSS_SELECTOR, ".acceptCookies"
+    )
+    if accept_cookies_button:
+        accept_cookies_button[0].click()
         time.sleep(2)
 
-        accept_cookies_button = driver.find_elements(
-            By.CSS_SELECTOR, ".acceptCookies"
-        )
-        if accept_cookies_button:
-            accept_cookies_button[0].click()
-            time.sleep(2)
+    for page in pages:
+        url = urljoin(HOME_URL, page["url"])
 
-        if page["name"] == "home" or page["name"] == "computers":
-            scrape_page(driver, product_list, page["name"])
-        elif page["name"] == "laptops":
-            laptops_url = urljoin(
-                BASE_URL, "test-sites/e-commerce/more/computers/laptops"
-            )
-            scrape_page(driver, product_list, page["name"], laptops_url)
-        elif page["name"] == "tablets":
-            tablets_url = urljoin(
-                BASE_URL, "test-sites/e-commerce/more/computers/tablets"
-            )
-            scrape_page(driver, product_list, page["name"], tablets_url)
-        elif page["name"] == "touch":
-            touch_url = urljoin(
-                BASE_URL, "test-sites/e-commerce/more/phones/touch"
-            )
-            scrape_page(driver, product_list, page["name"], touch_url)
+        if "additional_url" in page:
+            additional_url = urljoin(BASE_URL, page["additional_url"])
+            scrape_page(driver, [], page["name"], additional_url)
         else:
-            scrape_page(driver, product_list, page["name"])
-
-        save_to_csv(product_list, page["name"])
+            scrape_page(driver, [], page["name"])
 
     driver.quit()
-
 
 def scrape_page(
     driver: WebDriver,
