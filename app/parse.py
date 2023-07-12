@@ -4,12 +4,12 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
-from selenium.webdriver.chrome.webdriver import WebDriver
 from tqdm import tqdm
 from typing import Optional, List
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as ec
@@ -57,22 +57,21 @@ def get_all_products() -> None:
         time.sleep(2)
 
     for page in pages:
-        url = urljoin(HOME_URL, page["url"])
+        additional_url = page.get("additional_url")
+        dynamic_url = additional_url and urljoin(BASE_URL, additional_url)
+        product_list = scrape_page(driver, page["name"], dynamic_url)
+        scrape_with_progress(product_list, page["name"])
 
-        if "additional_url" in page:
-            additional_url = urljoin(BASE_URL, page["additional_url"])
-            scrape_page(driver, [], page["name"], additional_url)
-        else:
-            scrape_page(driver, [], page["name"])
+        save_to_csv(product_list, page["name"])
 
     driver.quit()
 
+
 def scrape_page(
     driver: WebDriver,
-    product_list: List[Product],
     page_name: str,
     dynamic_url: Optional[str] = None,
-   ) -> None:
+) -> List[Product]:
     if dynamic_url:
         driver.get(dynamic_url)
         time.sleep(2)
@@ -95,39 +94,44 @@ def scrape_page(
     soup = BeautifulSoup(driver.page_source, "html.parser")
     products = soup.select(".thumbnail")
 
+    product_list = []
+    for product in products:
+        title_element = product.select_one(".title")
+        title = (
+            title_element["title"]
+            if "title" in title_element.attrs
+            else title_element.text.strip()
+        )
+        description = (
+            product.select_one
+            (".description").text.strip().replace("\xa0", " ")
+        )
+        price = float(
+            product.select_one(".price").text.strip().replace("$", "")
+        )
+        rating_element = product.select_one(".ratings")
+        rating = len(rating_element.select(".glyphicon-star"))
+        num_of_reviews_element = rating_element.select_one(".pull-right")
+        num_of_reviews_text = num_of_reviews_element.text.strip()
+        num_of_reviews = (
+            int(num_of_reviews_text.split()[0])
+            if num_of_reviews_text else 0
+        )
+        scraped_product = Product(
+            title, description, price, rating, num_of_reviews
+        )
+        product_list.append(scraped_product)
+
+    return product_list
+
+
+def progress_bars(products: List[Product], page_name: str) -> None:
     with tqdm(total=len(products), desc=f"Scraping {page_name}") as pbar:
         for product in products:
-            title_element = product.select_one(".title")
-            title = (
-                title_element["title"]
-                if "title" in title_element.attrs
-                else title_element.text.strip()
-            )
-            description = (
-                product.select_one
-                (".description").text.strip().replace("\xa0", " ")
-            )
-            price = float(
-                product.select_one(".price").text.strip().replace("$", "")
-            )
-            rating_element = product.select_one(".ratings")
-            rating_icons = rating_element.select(".glyphicon-star")
-            rating = len(rating_icons)
-            num_of_reviews_element = rating_element.select_one(".pull-right")
-            num_of_reviews_text = num_of_reviews_element.text.strip()
-            num_of_reviews = (
-                int(num_of_reviews_text.split()[0])
-                if num_of_reviews_text else 0
-            )
-            scraped_product = Product(
-                title, description, price, rating, num_of_reviews
-            )
-            product_list.append(scraped_product)
-
             pbar.update(1)
 
 
-def save_to_csv(products: list, page_name: str) -> None:
+def save_to_csv(products: List[Product], page_name: str) -> None:
     with open(f"{page_name}.csv", "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([
