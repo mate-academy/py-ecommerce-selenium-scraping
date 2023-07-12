@@ -9,16 +9,16 @@ from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 
-BASE_URL = "https://webscraper.io/"
+BASE_URL = "https://webscraper.io/test-sites/"
 URLS = {
-    "home": urljoin(BASE_URL, "test-sites/e-commerce/more"),
-    "computers": urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
+    "home": urljoin(BASE_URL, "e-commerce/more"),
+    "computers": urljoin(BASE_URL, "e-commerce/more/computers"),
     "laptops": urljoin(BASE_URL,
-                       "test-sites/e-commerce/more/computers/laptops"),
+                       "e-commerce/more/computers/laptops"),
     "tablets": urljoin(BASE_URL,
-                       "test-sites/e-commerce/more/computers/tablets"),
-    "phones": urljoin(BASE_URL, "test-sites/e-commerce/more/phones"),
-    "touch": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+                       "e-commerce/more/computers/tablets"),
+    "phones": urljoin(BASE_URL, "e-commerce/more/phones"),
+    "touch": urljoin(BASE_URL, "e-commerce/more/phones/touch"),
 }
 
 
