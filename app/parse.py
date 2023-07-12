@@ -72,10 +72,7 @@ def scrape_page(
     product_list: List[Product],
     page_name: str,
     dynamic_url: Optional[str] = None,
-    laptops_url: Optional[str] = None,
-    tablets_url: Optional[str] = None,
-    touch_url: Optional[str] = None
-) -> None:
+   ) -> None:
     if dynamic_url:
         driver.get(dynamic_url)
         time.sleep(2)
