@@ -51,8 +51,8 @@ def get_all_products() -> None:
         time.sleep(2)
     for page in pages:
         dynamic_url = urljoin(
-            BASE_URL, page.get("additional_url")) if page.get("additional_url"
-        ) else None
+            BASE_URL, page["additional_url"]
+        ) if page.get("additional_url") else None
         product_list = scrape_page(driver, page["name"], dynamic_url)
         scrape_with_progress(product_list, page["name"])
         save_to_csv(product_list, page["name"])
