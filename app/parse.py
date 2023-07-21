@@ -34,7 +34,7 @@ class Product:
 
     @classmethod
     def parse_product(cls, product: BeautifulSoup) -> "Product":
-        product = Product(
+        product = cls(
             title=product.select_one(".title")["title"],
             description=unidecode(product.select_one(".description").text),
             price=float(
@@ -82,12 +82,11 @@ class Product:
     @classmethod
     def create_csv_file(cls, url: str, products: list) -> None:
         url = url.split("/")
-        if url[-1] == "":
-            name_file = url[-2]
-            if name_file == "more":
-                name_file = "home"
-        else:
-            name_file = url[-1]
+        name_file = (
+            url[-1]
+            if url[-1] != "" else url[-2]
+            if url[-2] != "more" else "home"
+        )
 
         csv_path = name_file + ".csv"
 
