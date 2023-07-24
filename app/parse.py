@@ -1,11 +1,11 @@
 import csv
+import time
 from dataclasses import dataclass, fields, astuple
 from typing import List
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -55,23 +55,19 @@ def single_product(product: BeautifulSoup) -> Product:
 
 def get_products(url: str, driver: WebDriver) -> List[Product]:
     driver.get(URLS[url])
-    try:
-        accept_cookies = driver.find_element(By.CLASS_NAME, "acceptCookies")
-        if accept_cookies:
-            accept_cookies.click()
-    except NoSuchElementException:
-        pass
-    try:
-        more_button = driver.find_element(
-            By.CLASS_NAME, "ecomerce-items-scroll-more"
-        )
-        while True:
+    accept_cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
+    if accept_cookies:
+        accept_cookies[0].click()
+    more_buttons = driver.find_elements(
+        By.CLASS_NAME, "ecomerce-items-scroll-more"
+    )
+    if more_buttons:
+        more_button = more_buttons[0]
+        while more_button.is_displayed():
             more_button.click()
-    except Exception:
-        pass
+            time.sleep(0.1)
     page = driver.page_source
     products = BeautifulSoup(page, "html.parser").select(".thumbnail")
-
     return [single_product(product) for product in products]
 
 
