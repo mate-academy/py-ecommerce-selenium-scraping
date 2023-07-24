@@ -54,7 +54,7 @@ def single_product(product: BeautifulSoup) -> Product:
 
 
 def get_products(url: str, driver: WebDriver) -> List[Product]:
-    driver.get(URLS[url])
+    driver.get(url)
     accept_cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
     if accept_cookies:
         accept_cookies[0].click()
@@ -80,9 +80,9 @@ def write_products_to_csv(products: List[Product], name: str) -> None:
 
 def get_all_products() -> None:
     with create_driver() as driver:
-        for url in tqdm(URLS.keys()):
+        for filename, url in tqdm(URLS.items()):
             products = get_products(url, driver)
-            write_products_to_csv(products, url)
+            write_products_to_csv(products, filename)
 
 
 if __name__ == "__main__":
