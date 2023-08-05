@@ -1,6 +1,7 @@
 import csv
 import time
 from dataclasses import dataclass, astuple, fields
+from typing import List
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
@@ -72,16 +73,19 @@ def get_products_from_page(page_url: str,
     return [get_single_product(product) for product in products]
 
 
+def write_products_to_csv(file_path: str, products: List[Product]) -> None:
+    with open(file_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(PRODUCT_FIELDS)
+        writer.writerows([astuple(product) for product in products])
+
+
 def get_all_products() -> None:
     with webdriver.Chrome() as driver:
         for name, url in URLS.items():
-            with open(f"{name}.csv", "w",
-                      encoding="utf-8",
-                      newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow(PRODUCT_FIELDS)
-                products = get_products_from_page(url, driver)
-                writer.writerows([astuple(product) for product in products])
+            products = get_products_from_page(url, driver)
+            file_name = f"{name}.csv"
+            write_products_to_csv(file_name, products)
 
 
 if __name__ == "__main__":
