@@ -1,7 +1,6 @@
 import csv
 import logging
 import time
-import requests
 import sys
 
 from dataclasses import dataclass, astuple, fields
