@@ -72,7 +72,7 @@ def parse_single_page(page_url: str, driver: WebDriver) -> list[Product]:
     if button_more:
         while button_more[0].is_displayed():
             button_more[0].click()
-            time.sleep(0.2)
+            time.sleep(0.3)
 
     page_soup = BeautifulSoup(driver.page_source, "html.parser")
     page_products_soup = page_soup.select(".thumbnail")
