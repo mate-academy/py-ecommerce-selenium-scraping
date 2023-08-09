@@ -96,10 +96,22 @@ def write_data_to_csv(
 
 def get_all_products() -> None:
     with webdriver.Chrome() as driver:
+        logging.info(
+            "Start parsing process\n________________________________\n"
+        )
+
         for name, url in URLS.items():
+            logging.info(f"Parsing '{url}' page")
             products = parse_single_page(url, driver)
             file_name = f"{name}.csv"
+            logging.info(f"Writing data to '{file_name}'")
             write_data_to_csv(products, file_name)
+
+    logging.info(
+        "\n________________________________\n"
+        "Parsing is finished successfully"
+        "\n________________________________\n"
+    )
 
 
 if __name__ == "__main__":
