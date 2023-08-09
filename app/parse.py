@@ -2,8 +2,15 @@ from dataclasses import dataclass
 from urllib.parse import urljoin
 
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+BASE_URL = "https://webscraper.io/test-sites/e-commerce/more/"
+URLS = {
+    "home": BASE_URL,
+    "computers": urljoin(BASE_URL, "computers/"),
+    "laptops": urljoin(BASE_URL, "computers/laptops"),
+    "tablets": urljoin(BASE_URL, "computers/tablets"),
+    "phones": urljoin(BASE_URL, "phones/"),
+    "touch": urljoin(BASE_URL, "phones/touch")
+}
 
 
 @dataclass
