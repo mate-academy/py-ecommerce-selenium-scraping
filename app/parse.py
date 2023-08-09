@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Self
 from urllib.parse import urljoin
 
-from bs4 import Tag
-
+import requests
+from bs4 import Tag, BeautifulSoup
 
 BASE_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 URLS = {
@@ -25,7 +25,7 @@ class Product:
     num_of_reviews: int
 
     @classmethod
-    def get_single_product(cls, product: Tag) -> Self:
+    def parse_single_product(cls, product: Tag) -> Self:
         single_product_data = dict(
             title=product.select_one(".title")["title"],
             description=product.select_one(".description").text,
@@ -36,6 +36,20 @@ class Product:
             ),
         )
         return cls(**single_product_data)
+
+
+def parse_single_page(page_url: str) -> list[Product]:
+    page_content = requests.get(page_url).content
+    base_soup = BeautifulSoup(page_content, "html.parser")
+
+    page_products_soup = base_soup.select(".thumbnail")
+
+    all_page_quotes = [
+        Product.parse_single_product(product)
+        for product in page_products_soup
+    ]
+
+    return all_page_quotes
 
 
 def get_all_products() -> None:
