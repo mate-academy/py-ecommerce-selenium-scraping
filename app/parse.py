@@ -1,8 +1,9 @@
+import csv
 import logging
 import requests
 import sys
 
-from dataclasses import dataclass
+from dataclasses import dataclass, astuple, fields
 from bs4 import Tag, BeautifulSoup
 from typing import Self
 from urllib.parse import urljoin
@@ -65,7 +66,17 @@ def parse_single_page(page_url: str) -> list[Product]:
     return all_page_quotes
 
 
-def get_all_products() -> None:
+def write_data_to_csv(
+        products: list[Product],
+        output_csv_path: str,
+) -> None:
+    with open(output_csv_path, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow([field.name for field in fields(Product)])
+        writer.writerows([astuple(product) for product in products])
+
+
+def get_all_products() -> list[Product]:
     pass
 
 
