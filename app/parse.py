@@ -1,9 +1,12 @@
+import logging
+import requests
+import sys
+
 from dataclasses import dataclass
+from bs4 import Tag, BeautifulSoup
 from typing import Self
 from urllib.parse import urljoin
 
-import requests
-from bs4 import Tag, BeautifulSoup
 
 BASE_URL = "https://webscraper.io/test-sites/e-commerce/more/"
 URLS = {
@@ -14,6 +17,16 @@ URLS = {
     "phones": urljoin(BASE_URL, "phones/"),
     "touch": urljoin(BASE_URL, "phones/touch")
 }
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)8s]: %(message)s",
+    handlers=[
+        logging.FileHandler("parser.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
 
 
 @dataclass
