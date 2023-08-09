@@ -1,10 +1,14 @@
 import csv
 import logging
+import time
 import requests
 import sys
 
 from dataclasses import dataclass, astuple, fields
 from bs4 import Tag, BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.by import By
 from typing import Self
 from urllib.parse import urljoin
 
@@ -42,9 +46,11 @@ class Product:
     def parse_single_product(cls, product: Tag) -> Self:
         single_product_data = dict(
             title=product.select_one(".title")["title"],
-            description=product.select_one(".description").text,
+            description=product.select_one(
+                ".description"
+            ).text.replace("\xa0", " "),
             price=float(product.select_one(".price").text.replace("$", "")),
-            rating=len(product.select(".glyphicon-star")),
+            rating=len(product.select(".ws-icon-star")),
             num_of_reviews=int(
                 product.select_one("p.pull-right").text.split()[0]
             ),
@@ -52,18 +58,30 @@ class Product:
         return cls(**single_product_data)
 
 
-def parse_single_page(page_url: str) -> list[Product]:
-    page_content = requests.get(page_url).content
-    base_soup = BeautifulSoup(page_content, "html.parser")
+def parse_single_page(page_url: str, driver: WebDriver) -> list[Product]:
+    driver.get(page_url)
 
-    page_products_soup = base_soup.select(".thumbnail")
+    cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
+    if cookies:
+        cookies[0].click()
 
-    all_page_quotes = [
+    button_more = driver.find_elements(
+        By.CLASS_NAME,
+        "ecomerce-items-scroll-more",
+    )
+    if button_more:
+        while button_more[0].is_displayed():
+            button_more[0].click()
+            time.sleep(0.2)
+
+    page_soup = BeautifulSoup(driver.page_source, "html.parser")
+    page_products_soup = page_soup.select(".thumbnail")
+    all_page_products = [
         Product.parse_single_product(product)
         for product in page_products_soup
     ]
 
-    return all_page_quotes
+    return all_page_products
 
 
 def write_data_to_csv(
@@ -76,8 +94,12 @@ def write_data_to_csv(
         writer.writerows([astuple(product) for product in products])
 
 
-def get_all_products() -> list[Product]:
-    pass
+def get_all_products() -> None:
+    with webdriver.Chrome() as driver:
+        for name, url in URLS.items():
+            products = parse_single_page(url, driver)
+            file_name = f"{name}.csv"
+            write_data_to_csv(products, file_name)
 
 
 if __name__ == "__main__":
