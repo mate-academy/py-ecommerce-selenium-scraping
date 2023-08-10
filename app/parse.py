@@ -94,7 +94,10 @@ def write_data_to_csv(
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as driver:
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+
+    with webdriver.Chrome(options=options) as driver:
         logging.info(
             "Start parsing process\n________________________________\n"
         )
