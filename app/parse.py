@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import logging
 import time
@@ -9,7 +11,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from tqdm import tqdm
-from typing import Self
 from urllib.parse import urljoin
 
 
@@ -43,7 +44,7 @@ class Product:
     num_of_reviews: int
 
     @classmethod
-    def parse_single_product(cls, product: Tag) -> Self:
+    def parse_single_product(cls, product: Tag) -> Product:
         single_product_data = dict(
             title=product.select_one(".title")["title"],
             description=product.select_one(
@@ -96,7 +97,7 @@ def write_data_to_csv(
 
 def get_all_products() -> None:
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
+    options.add_argument("--headless")
 
     with webdriver.Chrome(options=options) as driver:
         logging.info(
