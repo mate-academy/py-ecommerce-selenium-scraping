@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import logging
 import time
@@ -33,22 +35,22 @@ class Product:
     rating: int
     num_of_reviews: int
 
+    @classmethod
+    def convert_to_product_instance(cls, product: Tag) -> Product:
+        return cls(
+            title=product.select_one(".title")["title"],
+            description=product.select_one(".description").text.replace("\xa0", " "),
+            price=float(product.select_one(".price").text.replace("$", "")),
+            rating=len(product.select(".ws-icon-star")),
+            num_of_reviews=int(product.select_one(".ratings > .pull-right").text.split()[0])
+        )
+
 
 variable_names = [field.name for field in fields(Product)]
 
 
-def convert_to_product_instance(product: Tag) -> Product:
-    return Product(
-        title=product.select_one(".title")["title"],
-        description=product.select_one(".description").text.replace("\xa0", " "),
-        price=float(product.select_one(".price").text.replace("$", "")),
-        rating=len(product.select(".ws-icon-star")),
-        num_of_reviews=int(product.select_one(".ratings > .pull-right").text.split()[0])
-    )
-
-
 def parse_one_page(soup: BeautifulSoup) -> list[Product]:
-    return [convert_to_product_instance(product) for product in soup.select(".thumbnail")]
+    return [Product.convert_to_product_instance(product) for product in soup.select(".thumbnail")]
 
 
 def click_more_button_if_possible(url: str) -> BeautifulSoup:
