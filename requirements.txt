@@ -32,6 +32,7 @@ soupsieve==2.4.1
 tomli==2.0.1
 trio==0.22.2
 trio-websocket==0.10.3
+tqdm==4.66.0
 urllib3==2.0.4
 webdriver-manager==4.0.0
 wsproto==1.2.0
