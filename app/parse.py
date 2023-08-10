@@ -37,7 +37,7 @@ class Product:
 variable_names = [field.name for field in fields(Product)]
 
 
-def convert_to_product_instance(product: Tag):
+def convert_to_product_instance(product: Tag) -> Product:
     return Product(
         title=product.select_one(".title")["title"],
         description=product.select_one(".description").text.replace("\xa0", " "),
@@ -47,7 +47,7 @@ def convert_to_product_instance(product: Tag):
     )
 
 
-def parse_one_page(soup: BeautifulSoup):
+def parse_one_page(soup: BeautifulSoup) -> list[Product]:
     return [convert_to_product_instance(product) for product in soup.select(".thumbnail")]
 
 
@@ -69,14 +69,14 @@ def click_more_button_if_possible(url: str) -> BeautifulSoup:
     return soup
 
 
-def write_data_to_csv(data: list[Product], url_name: str):
+def write_data_to_csv(data: list[Product], url_name: str) -> None:
     with open(
             f"{url_name.split('_')[0].lower()}.csv", mode="w", newline=""
     ) as file:
         writer = csv.writer(file)
         writer.writerow(variable_names)
         writer.writerows([astuple(product) for product in data])
-        logging.info(f"Data were parsed!\n")
+        logging.info("Data were parsed!\n")
 
 
 def get_all_products() -> None:
