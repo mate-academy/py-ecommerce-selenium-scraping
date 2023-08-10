@@ -8,6 +8,7 @@ from bs4 import Tag, BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from tqdm import tqdm
 from typing import Self
 from urllib.parse import urljoin
 
@@ -102,7 +103,7 @@ def get_all_products() -> None:
             "Start parsing process\n________________________________\n"
         )
 
-        for name, url in URLS.items():
+        for name, url in tqdm(URLS.items(), desc="Parsing URLs"):
             logging.info(f"Parsing '{url}' page")
             products = parse_single_page(url, driver)
             file_name = f"{name}.csv"
