@@ -1,9 +1,9 @@
 import csv
 import logging
+import re
 import sys
 import time
 from dataclasses import dataclass, fields, astuple
-from pprint import pprint
 from urllib.parse import urljoin
 
 import requests
@@ -42,7 +42,7 @@ class Parser:
         self.navigation_data_cache = None
         self._initialize_navigation_cache()
 
-    def _initialize_navigation_cache(self):
+    def _initialize_navigation_cache(self) -> None:
         if self.navigation_data_cache is None:
             self.driver.get(self.url_to_parse)
 
@@ -96,8 +96,10 @@ class Parser:
     @staticmethod
     def parse_single_product(product_soup: Tag) -> Product:
         return Product(
-            title=product_soup.select_one("h4 > a.title").text,
-            description=product_soup.select_one("p.description").text,
+            title=product_soup.select_one(".title")["title"],
+            description=product_soup.select_one(
+                ".description"
+            ).text.replace("\xa0", " "),
             price=float(product_soup.select_one("h4.price").text.replace("$", "")),
             rating=len(product_soup.select(".ratings > p > span")),
             num_of_reviews=int(product_soup.select_one(".ratings > p").text.split()[0]),
@@ -118,7 +120,7 @@ class Parser:
 
     @staticmethod
     def write_data_to_csv(product_name: str, products: list[Product]) -> None:
-        with open(f"{product_name.lower()}.csv", "w") as file:
+        with open(f"{product_name}.csv", "w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(PRODUCT_FIELDS)
             writer.writerows([astuple(product) for product in products])
