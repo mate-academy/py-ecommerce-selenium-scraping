@@ -15,11 +15,11 @@ BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 
 
-class LoggerFactory(object):
+class LoggerFactory:
     _LOG = None
 
     @staticmethod
-    def __create_logger(log_file, log_level):
+    def __create_logger(log_file: str, log_level: str) -> logging.Logger:
         """
         A private method that interacts with the python
         logging module
@@ -36,16 +36,14 @@ class LoggerFactory(object):
         )
 
         # set the logging level based on the user selection
-        if log_level == "INFO":
-            LoggerFactory._LOG.setLevel(logging.INFO)
-        elif log_level == "ERROR":
-            LoggerFactory._LOG.setLevel(logging.ERROR)
-        elif log_level == "DEBUG":
-            LoggerFactory._LOG.setLevel(logging.DEBUG)
+        log_level = log_level.upper()
+        if log_level in {"INFO", "ERROR", "DEBUG"}:
+            LoggerFactory._LOG.setLevel(getattr(logging, log_level))
+
         return LoggerFactory._LOG
 
     @staticmethod
-    def get_logger(log_file, log_level):
+    def get_logger(log_file: str, log_level: str) -> logging.Logger:
         """
         A static method called by other modules to initialize logger in
         their own module
