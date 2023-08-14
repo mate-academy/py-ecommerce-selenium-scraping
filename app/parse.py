@@ -1,9 +1,8 @@
 import csv
 import logging
-import re
 import sys
 import time
-from dataclasses import dataclass, fields, astuple
+from dataclasses import astuple, dataclass, fields
 from urllib.parse import urljoin
 
 import requests
@@ -15,11 +14,49 @@ from selenium.webdriver.remote.webdriver import WebDriver
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)5s]:  %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
+
+class LoggerFactory(object):
+    _LOG = None
+
+    @staticmethod
+    def __create_logger(log_file, log_level):
+        """
+        A private method that interacts with the python
+        logging module
+        """
+        # set the logging format
+        log_format = "[%(levelname)5s]:  %(message)s"
+
+        # Initialize the class variable with logger object
+        LoggerFactory._LOG = logging.getLogger(log_file)
+        logging.basicConfig(
+            level=logging.INFO,
+            format=log_format,
+            handlers=[logging.StreamHandler(sys.stdout)],
+        )
+
+        # set the logging level based on the user selection
+        if log_level == "INFO":
+            LoggerFactory._LOG.setLevel(logging.INFO)
+        elif log_level == "ERROR":
+            LoggerFactory._LOG.setLevel(logging.ERROR)
+        elif log_level == "DEBUG":
+            LoggerFactory._LOG.setLevel(logging.DEBUG)
+        return LoggerFactory._LOG
+
+    @staticmethod
+    def get_logger(log_file, log_level):
+        """
+        A static method called by other modules to initialize logger in
+        their own module
+        """
+        logger = LoggerFactory.__create_logger(log_file, log_level)
+
+        # return the logger object
+        return logger
+
+
+logger = LoggerFactory.get_logger("mymodule.py", log_level="INFO")
 
 
 @dataclass
@@ -35,7 +72,6 @@ PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 
 class Parser:
-
     def __init__(self, driver: WebDriver, url_to_parse: str) -> None:
         self.driver = driver
         self.url_to_parse = url_to_parse
@@ -58,15 +94,19 @@ class Parser:
                     nav_item_href = nav_item.get_attribute("href")
                     navigation_data[nav_item.text] = nav_item.get_attribute("href")
                     self.driver.get(nav_item_href)
-                    sub_nav_items = self.driver.find_elements(By.CLASS_NAME, "subcategory-link ")
+                    sub_nav_items = self.driver.find_elements(
+                        By.CLASS_NAME, "subcategory-link "
+                    )
 
                     for sub_nav_item in sub_nav_items:
-                        navigation_data[sub_nav_item.text] = sub_nav_item.get_attribute("href")
+                        navigation_data[sub_nav_item.text] = sub_nav_item.get_attribute(
+                            "href"
+                        )
                     self.driver.back()
 
                 else:
                     navigation_data[nav_item.text] = nav_item.get_attribute("href")
-            logging.info("Analyzed navigation section")
+            logger.info("Analyzed navigation section")
             self.navigation_data_cache = navigation_data
 
     @property
@@ -81,13 +121,15 @@ class Parser:
     def click_accept_cookies(self) -> None:
         cookies_btn = self.driver.find_element(By.CLASS_NAME, "acceptCookies")
         cookies_btn.click()
-        logging.info("ACCEPTED COOKIES")
+        logger.info("ACCEPTED COOKIES")
 
     def click_more_button(self, page_url: str) -> None:
         self.driver.get(page_url)
 
         while True:
-            more_button = self.driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+            more_button = self.driver.find_element(
+                By.CLASS_NAME, "ecomerce-items-scroll-more"
+            )
             if more_button.get_attribute("style") == "display: none;":
                 break
             self.driver.execute_script("arguments[0].click();", more_button)
@@ -97,17 +139,20 @@ class Parser:
     def parse_single_product(product_soup: Tag) -> Product:
         return Product(
             title=product_soup.select_one(".title")["title"],
-            description=product_soup.select_one(
-                ".description"
-            ).text.replace("\xa0", " "),
+            description=product_soup.select_one(".description").text.replace(
+                "\xa0", " "
+            ),
             price=float(product_soup.select_one("h4.price").text.replace("$", "")),
             rating=len(product_soup.select(".ratings > p > span")),
             num_of_reviews=int(product_soup.select_one(".ratings > p").text.split()[0]),
         )
 
     def get_single_page_products(self, page_url: str) -> list[Product]:
+        logging.info(f"Parsing page: {page_url}")
         self.driver.get(page_url)
-        more_button_elements = self.driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")
+        more_button_elements = self.driver.find_elements(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
 
         if more_button_elements:
             logging.info("FOUND MORE BTN")
@@ -116,7 +161,9 @@ class Parser:
         page_soup = BeautifulSoup(self.driver.page_source, "html.parser")
         products_soup = page_soup.select(".thumbnail")
 
-        return [self.parse_single_product(product_soup) for product_soup in products_soup]
+        return [
+            self.parse_single_product(product_soup) for product_soup in products_soup
+        ]
 
     @staticmethod
     def write_data_to_csv(product_name: str, products: list[Product]) -> None:
