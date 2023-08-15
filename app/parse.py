@@ -101,7 +101,8 @@ def get_all_products() -> None:
 
     with webdriver.Chrome(options=options) as driver:
         logging.info(
-            "Start parsing process\n________________________________\n"
+            "Start parsing process"
+            "\n________________________________\n"
         )
 
         for name, url in tqdm(URLS.items(), desc="Parsing URLs"):
