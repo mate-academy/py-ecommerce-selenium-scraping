@@ -71,7 +71,6 @@ def parse_hdd_block_prices(product_element: WebElement) -> dict[str, float]:
         return prices
     except NoSuchElementException:
         print("There is no buttons for hdd capacity available")
-        pass
 
 
 def parse_single_product(product_element: WebElement) -> Product:
