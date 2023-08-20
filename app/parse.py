@@ -71,6 +71,7 @@ def parse_hdd_block_prices(product_element: WebElement) -> dict[str, float]:
         return prices
     except NoSuchElementException:
         print("There is no buttons for hdd capacity available")
+        pass
 
 
 def parse_single_product(product_element: WebElement) -> Product:
@@ -122,6 +123,7 @@ def get_random_products(url: str, csv_file_path: str) -> None:
                 break
         except NoSuchElementException:
             print("There is no 'more' buttons anymore")
+            break
 
     products = driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
 
