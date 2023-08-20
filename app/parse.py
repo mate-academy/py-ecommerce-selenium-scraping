@@ -1,4 +1,5 @@
 import csv
+import time
 
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
@@ -21,7 +22,7 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    additional_info: dict
+    # additional_info: dict
 
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
@@ -96,9 +97,9 @@ def parse_single_product(product_element: WebElement) -> Product:
         ).text.split()[0]
     )
 
-    hdd_prices = parse_hdd_block_prices(product_element)
-
-    additional_info = {"hdd_prices": hdd_prices} if hdd_prices else None
+    # hdd_prices = parse_hdd_block_prices(product_element)
+    #
+    # additional_info = {"hdd_prices": hdd_prices} if hdd_prices else None
 
     return Product(
         title=title,
@@ -106,7 +107,7 @@ def parse_single_product(product_element: WebElement) -> Product:
         price=price,
         rating=rating,
         num_of_reviews=num_of_reviews,
-        additional_info=additional_info,
+        # additional_info=additional_info,
     )
 
 
@@ -121,6 +122,7 @@ def get_random_products(url: str, csv_file_path: str) -> None:
             more_button = driver.find_element(By.CLASS_NAME, "btn-primary")
             if more_button.is_displayed():
                 more_button.click()
+                time.sleep(1)
             else:
                 break
         except NoSuchElementException:
