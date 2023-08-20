@@ -22,7 +22,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    # additional_info: dict
 
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
@@ -97,17 +96,12 @@ def parse_single_product(product_element: WebElement) -> Product:
         ).text.split()[0]
     )
 
-    # hdd_prices = parse_hdd_block_prices(product_element)
-    #
-    # additional_info = {"hdd_prices": hdd_prices} if hdd_prices else None
-
     return Product(
         title=title,
         description=description,
         price=price,
         rating=rating,
         num_of_reviews=num_of_reviews,
-        # additional_info=additional_info,
     )
 
 
