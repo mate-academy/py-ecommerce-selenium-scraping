@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
+from tqdm import tqdm
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
@@ -124,7 +125,7 @@ def get_random_products(url: str, csv_file_path: str) -> None:
 
     products = driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
 
-    for product in products:
+    for product in tqdm(products, desc="Scraping Products", unit="product"):
         all_home_products.append(parse_single_product(product))
 
     write_products_to_csv(products=all_home_products, csv_file=csv_file_path)
