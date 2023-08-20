@@ -1,4 +1,5 @@
 import csv
+import asyncio
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
@@ -42,7 +43,9 @@ def get_driver() -> webdriver:
     return driver
 
 
-def parse_hdd_block_prices(product_element: WebElement) -> dict[str, float]:
+async def parse_hdd_block_prices(
+    product_element: WebElement,
+) -> dict[str, float]:
     detailed_url = urljoin(
         BASE_URL,
         product_element.find_element(By.CLASS_NAME, "title").get_attribute(
@@ -71,7 +74,7 @@ def parse_hdd_block_prices(product_element: WebElement) -> dict[str, float]:
         pass
 
 
-def parse_single_product(product_element: WebElement) -> Product:
+async def parse_single_product(product_element: WebElement) -> Product:
     title = product_element.find_element(By.CLASS_NAME, "title").get_attribute(
         "title"
     )
@@ -95,7 +98,7 @@ def parse_single_product(product_element: WebElement) -> Product:
         ).text.split()[0]
     )
 
-    hdd_prices = parse_hdd_block_prices(product_element)
+    hdd_prices = await parse_hdd_block_prices(product_element)
 
     additional_info = {"hdd_prices": hdd_prices} if hdd_prices else None
 
@@ -109,7 +112,7 @@ def parse_single_product(product_element: WebElement) -> Product:
     )
 
 
-def get_random_products(url: str, csv_file_path: str) -> None:
+async def get_random_products(url: str, csv_file_path: str) -> None:
     driver = get_driver()
     driver.get(url)
 
@@ -128,20 +131,26 @@ def get_random_products(url: str, csv_file_path: str) -> None:
     products = driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
 
     for product in products:
-        all_home_products.append(parse_single_product(product))
+        all_home_products.append(await parse_single_product(product))
 
     write_products_to_csv(products=all_home_products, csv_file=csv_file_path)
     driver.close()
 
 
-def get_all_products() -> None:
-    get_random_products(HOME_URL, "home.csv")
-    get_random_products(urljoin(HOME_URL, "phones"), "phones.csv")
-    get_random_products(urljoin(HOME_URL, "computers"), "computers.csv")
-    get_random_products(urljoin(HOME_URL, "phones/touch"), "touch.csv")
-    get_random_products(urljoin(HOME_URL, "computers/tablets"), "tablets.csv")
-    get_random_products(urljoin(HOME_URL, "computers/laptops"), "laptops.csv")
+async def get_all_products() -> None:
+    await asyncio.gather(
+        get_random_products(HOME_URL, "home.csv"),
+        get_random_products(urljoin(HOME_URL, "phones"), "phones.csv"),
+        get_random_products(urljoin(HOME_URL, "computers"), "computers.csv"),
+        get_random_products(urljoin(HOME_URL, "phones/touch"), "touch.csv"),
+        get_random_products(
+            urljoin(HOME_URL, "computers/tablets"), "tablets.csv"
+        ),
+        get_random_products(
+            urljoin(HOME_URL, "computers/laptops"), "laptops.csv"
+        ),
+    )
 
 
 if __name__ == "__main__":
-    get_all_products()
+    asyncio.run(get_all_products())
