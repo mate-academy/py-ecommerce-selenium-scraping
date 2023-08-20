@@ -1,4 +1,5 @@
 import csv
+
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
