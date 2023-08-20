@@ -122,7 +122,7 @@ def get_random_products(url: str, csv_file_path: str) -> None:
             else:
                 break
         except NoSuchElementException:
-            print("There is no 'more' buttons anymore")
+            print("There is no 'more' buttons")
             break
 
     products = driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
