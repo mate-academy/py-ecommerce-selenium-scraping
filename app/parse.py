@@ -92,9 +92,9 @@ class Parser:
         rating_element = product_soup.select_one("p[data-rating]")
         if rating_element is not None:
             return int(rating_element.get("data-rating"))
-        else:
-            rating_element = product_soup.select_one(".ratings")
-            star_icons = rating_element.select(".ws-icon.ws-icon-star")
+
+        rating_element = product_soup.select_one(".ratings")
+        star_icons = rating_element.select(".ws-icon.ws-icon-star")
         return len(star_icons)
 
     def parse_single_product(self, product_soup: BeautifulSoup) -> Product:
