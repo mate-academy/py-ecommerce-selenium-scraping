@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from app.parse import get_all_products, Product
+from app.enitity import Product
+from app.parse import get_all_products
 
 
 TEST_DIR = Path(__file__).resolve().parent
