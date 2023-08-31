@@ -1,4 +1,8 @@
+import csv
 from time import sleep
+
+from selenium.webdriver.remote.webelement import WebElement
+from tqdm import tqdm
 
 from selenium.common import TimeoutException, ElementNotInteractableException
 
@@ -16,9 +20,54 @@ from app.config import Product
 def click_on_cookies(driver: webdriver) -> None:
     wait = WebDriverWait(driver, 10)
     cookies_button_locator = (By.CLASS_NAME, config.CLASS_BUTTON_COOKIES)
-    cookies_button = wait.until(expected_conditions.element_to_be_clickable(cookies_button_locator))
+    cookies_button = wait.until(
+        expected_conditions.element_to_be_clickable(cookies_button_locator))
 
     cookies_button.click()
+
+
+def click_button_more(driver: webdriver, link: str) -> None:
+
+    try:
+        driver.get(link)
+        more_button = driver.find_elements(
+            By.CLASS_NAME,
+            config.CLASS_MORE_BUTTON
+        )[0]
+        while more_button.is_displayed():
+            sleep(0.3)
+            more_button = driver.find_elements(
+                By.CLASS_NAME,
+                config.CLASS_MORE_BUTTON
+            )[0]
+            more_button.click()
+    except (TimeoutException, ElementNotInteractableException, IndexError):
+        return
+
+
+def get_one_product(product: WebElement) -> Product:
+    return Product(
+        title=product.find_element(
+            By.CLASS_NAME,
+            config.CLASS_TITLE
+        ).get_attribute(config.CLASS_TITLE),
+        description=product.find_element(
+            By.CLASS_NAME,
+            config.CLASS_DESCRIPTION
+        ).text,
+        price=float(product.find_element(
+            By.CLASS_NAME,
+            config.CLASS_PRICE
+        ).text.replace("$", "")),
+        rating=len(product.find_elements(
+            By.CLASS_NAME,
+            config.CLASS_STAR_RATING
+        )),
+        num_of_reviews=int(product.find_element(
+            By.CSS_SELECTOR,
+            config.CLASS_REVIEW
+        ).text.split()[0]),
+    )
 
 
 def get_inner_urls(links: list, driver: webdriver) -> list:
@@ -26,7 +75,10 @@ def get_inner_urls(links: list, driver: webdriver) -> list:
 
     for link in links:
         driver.get(link)
-        inner_mix = driver.find_elements(By.CSS_SELECTOR, config.CLASS_INNER_URLS)
+        inner_mix = driver.find_elements(
+            By.CSS_SELECTOR,
+            config.CLASS_INNER_URLS
+        )
 
         for inner_link in inner_mix:
             inner_links.append(inner_link.get_attribute("href"))
@@ -34,65 +86,46 @@ def get_inner_urls(links: list, driver: webdriver) -> list:
     return inner_links
 
 
-def click_button_more(driver: webdriver, link: str):
-
-    try:
-        driver.get(link)
-        more_button = driver.find_elements(By.CLASS_NAME, config.CLASS_MORE_BUTTON)[0]
-        while more_button.is_displayed():
-            sleep(0.3)
-            more_button = driver.find_elements(By.CLASS_NAME, config.CLASS_MORE_BUTTON)[0]
-            more_button.click()
-    except (TimeoutException, ElementNotInteractableException):
-        return
+def write_to_file(file_name: str, product_list: list) -> None:
+    with open(file_name, "w", encoding="utf-8", newline="") as products_file:
+        writer = csv.DictWriter(
+            products_file,
+            fieldnames=config.PRODUCT_FIELDS
+        )
+        writer.writeheader()
+        for product in product_list:
+            writer.writerow(product.__dict__)
 
 
-def get_info_from_product(driver:webdriver, links: str) -> list[config.Product]:
-    for link in links:
+def get_info_from_product(driver: webdriver, links: list) -> None:
+    for link in tqdm(links):
         driver.get(link)
         click_button_more(driver, link)
         products = driver.find_elements(By.CLASS_NAME, config.CLASS_PRODUCT)
+        product_list = [get_one_product(product) for product in products]
+        file_name = link.split("/")[-1] + ".csv"
+        write_to_file(file_name, product_list)
 
 
 def get_all_products() -> None:
     options = Options()
     options.add_argument(config.CHROME_OPTIONS)
 
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(options=options)
     driver.get(config.HOME_URL)
 
     click_on_cookies(driver=driver)
 
-    links = driver.find_elements(By.CSS_SELECTOR, ".sidebar-nav > ul > li > a")
-    # print(links[2].get_attribute("href"))
-    # links[2].click()
+    links = driver.find_elements(By.CSS_SELECTOR, config.CLASS_URLS)
+
     all_links = []
 
-    for link in links:
+    for link in tqdm(links):
         all_links.append(link.get_attribute("href"))
 
     all_links.extend(get_inner_urls(all_links, driver))
 
-    # click_button_more(driver, "https://webscraper.io/test-sites/e-commerce/more/computers/laptops")
-
-    products = driver.find_elements(By.CLASS_NAME, config.CLASS_PRODUCT)
-    for product in products:
-        p = Product
-        print(type(p))
-        p.title = product.find_element(By.CLASS_NAME, config.CLASS_TITLE).get_attribute(config.CLASS_TITLE)
-        p.description = product.find_element(By.CLASS_NAME, config.CLASS_DESCRIPTION).text
-        price = product.find_element(By.CLASS_NAME, config.CLASS_PRICE).text
-        price = float(price.replace("$", ""))
-        p.price = price
-        p.rating = 5
-        p.num_of_reviews = 1
-
-    print(p.__str__(p))
-
-    print(all_links)
-
-
-
+    get_info_from_product(driver, all_links)
 
     driver.close()
 
