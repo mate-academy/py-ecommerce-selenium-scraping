@@ -1,7 +1,6 @@
 import csv
 import time
 
-import requests
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
@@ -17,6 +16,16 @@ BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 
 
+URLS = {
+    "home.csv": HOME_URL,
+    "computers.csv": urljoin(HOME_URL, "computers"),
+    "laptops.csv": urljoin(HOME_URL, "computers/laptops"),
+    "tablets.csv": urljoin(HOME_URL, "computers/tablets"),
+    "phones.csv": urljoin(HOME_URL, "phones"),
+    "touch.csv": urljoin(HOME_URL, "phones/touch"),
+}
+
+
 @dataclass
 class Product:
     title: str
@@ -24,7 +33,7 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    additional_info: dict
+    # additional_info: dict
 
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
@@ -53,28 +62,35 @@ def parse_hdd_block_prices(product_soup: BeautifulSoup) -> dict[str, float]:
             if not button.get_property("disabled"):
                 button.click()
                 prices[button.get_property("value")] = float(
-                    driver.find_element(By.CLASS_NAME, "price").text.replace("$", ""))
+                    driver.find_element(By.CLASS_NAME, "price").text.replace(
+                        "$", ""
+                    )
+                )
 
         return prices
-    except:
+    except NoSuchElementException:
         pass
 
 
 def parse_single_product(product_soup: BeautifulSoup) -> Product:
-    hdd_prices = parse_hdd_block_prices(product_soup)
+    # hdd_prices = parse_hdd_block_prices(product_soup)
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text,
+        description=product_soup.select_one(".description").text.replace(
+            " ", " "
+        ),
         price=float(product_soup.select_one(".price").text.replace("$", "")),
-        rating=len(product_soup.select("div.ratings > p > span.ws-icon.ws-icon-star")),
-        num_of_reviews=int(product_soup.select_one(
-            ".ratings > p.pull-right"
-        ).text.split()[0]),
-        additional_info={"hdd_prices": hdd_prices},
+        rating=len(
+            product_soup.select("div.ratings > p > span.ws-icon.ws-icon-star")
+        ),
+        num_of_reviews=int(
+            product_soup.select_one(".ratings > p.pull-right").text.split()[0]
+        ),
+        # additional_info={"hdd_prices": hdd_prices} if hdd_prices else None,
     )
 
 
-def accept_cookie(driver):
+def accept_cookie(driver: WebDriver) -> None:
     try:
         cookie_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
         cookie_button.click()
@@ -90,7 +106,9 @@ def more_button(url: str) -> BeautifulSoup:
     driver.get(url)
 
     try:
-        more_but = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+        more_but = driver.find_element(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
     except NoSuchElementException:
         more_but = None
 
@@ -121,17 +139,14 @@ def write_products_to_csv(csv_output_path: str, products: [Product]) -> None:
         writer.writerows([astuple(product) for product in products])
 
 
-def main(csv_output_path: str, url: str):
+def get_all_products() -> None:
     with webdriver.Edge() as new_driver:
         set_driver(new_driver)
-        products = get_single_page_products(url)
-        write_products_to_csv(csv_output_path, products)
+        for category, url in URLS.items():
+            accept_cookie(new_driver)
+            products = get_single_page_products(url)
+            write_products_to_csv(category, products)
 
 
 if __name__ == "__main__":
-    main("home.csv", HOME_URL)
-    main("random_computers.csv", urljoin(BASE_URL, "test-sites/e-commerce/more/computers"))
-    main("laptops.csv", urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops"))
-    main("tablets.csv", urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets"))
-    main("random_phones.csv", urljoin(BASE_URL, "test-sites/e-commerce/more/phones"))
-    main("phones_touch.csv", urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"))
+    get_all_products()
