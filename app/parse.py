@@ -33,7 +33,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    # additional_info: dict
 
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
@@ -50,30 +49,7 @@ def set_driver(new_driver: WebDriver) -> None:
     _driver = new_driver
 
 
-def parse_hdd_block_prices(product_soup: BeautifulSoup) -> dict[str, float]:
-    detailed_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
-    driver = get_driver()
-    driver.get(detailed_url)
-    try:
-        swatches = driver.find_element(By.CLASS_NAME, "swatches")
-        buttons = swatches.find_elements(By.TAG_NAME, "button")
-        prices = {}
-        for button in buttons:
-            if not button.get_property("disabled"):
-                button.click()
-                prices[button.get_property("value")] = float(
-                    driver.find_element(By.CLASS_NAME, "price").text.replace(
-                        "$", ""
-                    )
-                )
-
-        return prices
-    except NoSuchElementException:
-        pass
-
-
 def parse_single_product(product_soup: BeautifulSoup) -> Product:
-    # hdd_prices = parse_hdd_block_prices(product_soup)
     return Product(
         title=product_soup.select_one(".title")["title"],
         description=product_soup.select_one(".description").text.replace(
@@ -86,7 +62,6 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
         num_of_reviews=int(
             product_soup.select_one(".ratings > p.pull-right").text.split()[0]
         ),
-        # additional_info={"hdd_prices": hdd_prices} if hdd_prices else None,
     )
 
 
