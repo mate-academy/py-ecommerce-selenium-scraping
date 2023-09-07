@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 from dataclasses import dataclass, fields, astuple
-from time import sleep
 from urllib.parse import urljoin
 from tqdm import tqdm
 from selenium.common import TimeoutException
@@ -55,7 +54,7 @@ def get_sub_links(link: str, driver: Chrome) -> list[str]:
     return [sub_link.get_attribute("href") for sub_link in sub_links]
 
 
-def get_all_links(driver: Chrome) -> list[str]:
+def get_all_links(driver: WebDriver) -> list[str]:
     links = []
     sub_links = []
     driver.get(HOME_URL)
@@ -92,7 +91,7 @@ def get_page_and_file_name(link: str) -> tuple[str, str]:
     return page_name, page_name + ".csv"
 
 
-def accept_cookies(driver: Chrome) -> None:
+def accept_cookies(driver: WebDriver) -> None:
     cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
     if cookies:
         try:
@@ -103,7 +102,7 @@ def accept_cookies(driver: Chrome) -> None:
             print("Error while accepting cookies:", e)
 
 
-def get_full_page(driver: Chrome) -> None:
+def get_full_page(driver: WebDriver) -> None:
     accept_cookies(driver)
     more = driver.find_elements(
         By.CLASS_NAME,
@@ -126,7 +125,7 @@ def get_full_page(driver: Chrome) -> None:
             break
 
 
-def get_page_products(link: str, driver: Chrome) -> list:
+def get_page_products(driver: WebDriver, link: str) -> list:
     driver.get(link)
     get_full_page(driver)
     products_elements = driver.find_elements(By.CLASS_NAME, "thumbnail")
