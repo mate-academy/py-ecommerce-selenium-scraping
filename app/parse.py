@@ -16,6 +16,18 @@ from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+PAGE_INFO = [
+    (HOME_URL, "home.csv"),
+    (urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
+     "computers.csv"),
+    (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops"),
+     "laptops.csv"),
+    (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets"),
+     "tablets.csv"),
+    (urljoin(BASE_URL, "test-sites/e-commerce/more/phones"), "phones.csv"),
+    (urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+     "touch.csv")
+]
 
 
 @dataclass
@@ -25,6 +37,14 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
+
+
+def get_driver(url: str) -> WebDriver:
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")
+    driver = webdriver.Chrome(options=options)
+    driver.get(url)
+    return driver
 
 
 def rating_stars_count(rating_element: WebElement) -> int:
@@ -100,24 +120,7 @@ def get_full_page(driver: WebDriver) -> None:
     return
 
 
-def scrape_page(url: str, filename: str) -> None:
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    driver = webdriver.Chrome(options=options)
-    driver.get(url)
-
-    products = []
-
-    accept_cookies(driver=driver)
-
-    get_full_page(driver=driver)
-
-    product_elements = WebDriverWait(driver, 10).until(
-        ec.presence_of_all_elements_located((By.CLASS_NAME, "thumbnail")))
-
-    for product_element in product_elements:
-        products.append(get_product_info(product_element))
-
+def write_to_csv(filename: str, products: list) -> None:
     with open(filename, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(
@@ -133,25 +136,31 @@ def scrape_page(url: str, filename: str) -> None:
                     product.num_of_reviews
                 ]
             )
+    return
+
+
+def scrape_page(url: str, filename: str) -> None:
+    driver = get_driver(url)
+
+    products = []
+
+    accept_cookies(driver=driver)
+    get_full_page(driver=driver)
+
+    product_elements = WebDriverWait(driver, 10).until(
+        ec.presence_of_all_elements_located((By.CLASS_NAME, "thumbnail"))
+    )
+
+    for product_element in product_elements:
+        products.append(get_product_info(product_element))
+
+    write_to_csv(filename=filename, products=products)
 
     driver.quit()
 
 
 def get_all_products() -> None:
-    page_info = [
-        (HOME_URL, "home.csv"),
-        (urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
-         "computers.csv"),
-        (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops"),
-         "laptops.csv"),
-        (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets"),
-         "tablets.csv"),
-        (urljoin(BASE_URL, "test-sites/e-commerce/more/phones"), "phones.csv"),
-        (urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
-         "touch.csv")
-    ]
-
-    for url, filename in tqdm(page_info, desc="Scraping pages"):
+    for url, filename in tqdm(PAGE_INFO, desc="Scraping pages"):
         scrape_page(url, filename)
 
 
