@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 from tqdm import tqdm
-from selenium.common import TimeoutException
+from selenium.common import TimeoutException, ElementNotInteractableException
 from selenium.webdriver import ChromeOptions, Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -97,7 +97,7 @@ def accept_cookies(driver: WebDriver) -> None:
             WebDriverWait(driver, 10).until(
                 ec.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
             ).click()
-        except Exception as e:
+        except TimeoutException as e:
             print("Error while accepting cookies:", e)
 
 
