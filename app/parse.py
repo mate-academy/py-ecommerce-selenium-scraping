@@ -1,10 +1,16 @@
-import time
 from dataclasses import dataclass
 from urllib.parse import urljoin
 from selenium import webdriver
+from selenium.common import (
+    TimeoutException,
+    NoSuchElementException,
+    ElementNotInteractableException
+)
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 import csv
 from tqdm import tqdm
 
@@ -21,7 +27,7 @@ class Product:
     num_of_reviews: int
 
 
-def rating_stars_count(rating_element):
+def rating_stars_count(rating_element: WebElement) -> int:
     return len(
         rating_element.find_elements(
             By.TAG_NAME, "p"
@@ -31,8 +37,11 @@ def rating_stars_count(rating_element):
     )
 
 
-def get_product_info(product_element):
-    title = product_element.find_element(By.CLASS_NAME, "title").text
+def get_product_info(product_element: WebElement) -> Product:
+    title = product_element.find_element(
+        By.CLASS_NAME,
+        "title"
+    ).get_attribute("title")
     description = product_element.find_element(
         By.CLASS_NAME,
         "description"
@@ -57,47 +66,78 @@ def get_product_info(product_element):
     )
 
 
-def scrape_page(url, filename):
+def accept_cookies(driver: WebDriver) -> None:
+    try:
+        accept_cookies_button = driver.find_element(
+            By.CLASS_NAME,
+            "acceptCookies"
+        )
+        accept_cookies_button.click()
+    except ElementNotInteractableException:
+        pass
+    return
+
+
+def get_full_page(driver: WebDriver) -> None:
+    while True:
+        try:
+            more_button = driver.find_element(
+                By.CLASS_NAME,
+                "ecomerce-items-scroll-more"
+            )
+            more_button.click()
+            WebDriverWait(driver, 10).until(
+                ec.presence_of_all_elements_located(
+                    (By.CLASS_NAME, "ecomerce-items-scroll-more")
+                )
+            )
+        except (
+                TimeoutException,
+                NoSuchElementException,
+                ElementNotInteractableException
+        ):
+            break
+    return
+
+
+def scrape_page(url: str, filename: str) -> None:
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     driver = webdriver.Chrome(options=options)
-
     driver.get(url)
 
-    try:
-        accept_cookies_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.ID, "cookie-law-button")))
-        accept_cookies_button.click()
-    except:
-        pass
-
     products = []
-    while True:
-        product_elements = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.CLASS_NAME, "thumbnail")))
 
-        for product_element in product_elements:
-            products.append(get_product_info(product_element))
+    accept_cookies(driver=driver)
 
-        try:
-            more_button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
-            more_button.click()
-            time.sleep(5)
-        except:
-            break
+    get_full_page(driver=driver)
 
-    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+    product_elements = WebDriverWait(driver, 10).until(
+        ec.presence_of_all_elements_located((By.CLASS_NAME, "thumbnail")))
+
+    for product_element in product_elements:
+        products.append(get_product_info(product_element))
+
+    with open(filename, mode="w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(
-            ["Title", "Description", "Price", "Rating", "Number of Reviews"])
+            ["title", "description", "price", "rating", "num_of_reviews"]
+        )
         for product in products:
-            writer.writerow([product.title, product.description, product.price,
-                             product.rating, product.num_of_reviews])
+            writer.writerow(
+                [
+                    product.title,
+                    product.description,
+                    product.price,
+                    product.rating,
+                    product.num_of_reviews
+                ]
+            )
 
     driver.quit()
 
 
-def get_all_products():
+def get_all_products() -> None:
     page_info = [
         (HOME_URL, "home.csv"),
         (urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
