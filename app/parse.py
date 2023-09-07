@@ -114,13 +114,14 @@ def get_full_page(driver: Chrome) -> None:
     more_button = more[0]
     logging.info("Getting full page")
     while more_button.is_displayed():
-        more_button.click()
-        sleep(0.1)
         try:
-            more_button = WebDriverWait(driver, 5).until(
+            more_button = WebDriverWait(driver, 10).until(
                 ec.presence_of_element_located(
                     (By.CLASS_NAME, "ecomerce-items-scroll-more"))
             )
+            more_button.click()
+        except ElementNotInteractableException:
+            continue
         except TimeoutException:
             break
 
