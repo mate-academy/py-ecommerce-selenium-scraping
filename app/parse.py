@@ -71,7 +71,6 @@ def get_all_links(driver: WebDriver) -> list[str]:
 
     for link in tqdm(links):
         sub_links.extend(get_sub_links(link, driver))
-    driver.close()
     links.extend(sub_links)
 
     return links
@@ -168,12 +167,10 @@ def get_all_products() -> None:
     driver = get_driver()
     links = get_all_links(driver)
     for link in links:
-        new_driver = get_driver()
-        new_driver.get(link)
         page_name, file_name = get_page_and_file_name(link)
 
         logging.info(f"Getting products from page {page_name}")
-        products_elements = get_page_products(driver=new_driver, link=link)
+        products_elements = get_page_products(driver=driver, link=link)
 
         logging.info("Parsing products")
 
@@ -188,7 +185,7 @@ def get_all_products() -> None:
 
         logging.info(f"Writing products to {file_name}")
         write_to_file(file_name, products)
-        new_driver.close()
+    driver.close()
 
 
 if __name__ == "__main__":
