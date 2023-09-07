@@ -4,6 +4,8 @@ import os
 import sys
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
+
+from selenium.webdriver.chrome.webdriver import WebDriver
 from tqdm import tqdm
 from selenium.common import TimeoutException, ElementNotInteractableException
 from selenium.webdriver import ChromeOptions, Chrome
@@ -14,7 +16,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-
 
 
 @dataclass
@@ -126,7 +127,7 @@ def get_full_page(driver: WebDriver) -> None:
 
 def get_page_products(driver: WebDriver, link: str) -> list:
     driver.get(link)
-    get_full_page(driver)
+    get_full_page(driver=driver)
     products_elements = driver.find_elements(By.CLASS_NAME, "thumbnail")
     return [products_element for products_element in tqdm(products_elements)]
 
@@ -163,9 +164,8 @@ def parse_product(product_element: WebElement) -> Product:
 
 
 def get_all_products() -> None:
-
     driver = get_driver()
-    links = get_all_links(driver)
+    links = get_all_links(driver=driver)
     for link in links:
         page_name, file_name = get_page_and_file_name(link)
 
