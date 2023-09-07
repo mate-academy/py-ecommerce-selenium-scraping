@@ -1,5 +1,6 @@
 import csv
 from dataclasses import dataclass, fields, astuple
+from time import sleep
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
@@ -46,23 +47,31 @@ def get_product_blocks(page_soup: BeautifulSoup) -> list[Tag]:
     return [block for block in blocks]
 
 
+def accept_cookies(driver: webdriver) -> None:
+    try:
+        cookie_button = driver.find_element(
+            By.CLASS_NAME, "acceptCookies"
+        )
+        cookie_button.click()
+    except NoSuchElementException:
+        pass
+
+
 def parse_single_page(url: str, driver: webdriver) -> list[Product]:
     driver.get(url)
+    accept_cookies(driver)
 
     try:
         more_button = driver.find_element(
             By.CSS_SELECTOR,
             "a.btn.btn-primary.btn-lg.btn-block.ecomerce-items-scroll-more"
         )
-    except NoSuchElementException:
-        more_button = None
+        while more_button.is_displayed():
+            more_button.click()
+            sleep(0.25)
 
-    if more_button is not None:
-        while True:
-            style_value = more_button.get_attribute("style")
-            if "display: none;" in style_value:
-                break
-            driver.execute_script("arguments[0].click();", more_button)
+    except NoSuchElementException:
+        pass
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
 
