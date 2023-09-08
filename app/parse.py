@@ -11,8 +11,6 @@ from selenium.common import (
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
-import requests
-from bs4 import BeautifulSoup
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -27,24 +25,26 @@ class Product:
     num_of_reviews: int
 
 
-def get_all_pages() -> List[str]:
+def get_all_pages(driver: WebDriver) -> List[str]:
     links_list = []
-    page = requests.get(HOME_URL).content
-    soup = BeautifulSoup(page, "html.parser")
-    main_page_links = soup.select(".sidebar-nav li > a")
+
+    driver.get(HOME_URL)
+
+    main_page_links = driver.find_elements(
+        By.CSS_SELECTOR,
+        ".sidebar-nav li > a"
+    )
     links_list.extend(
-        [urljoin(BASE_URL, link.get("href")) for link in main_page_links]
+        [link.get_attribute("href") for link in main_page_links]
     )
 
     for link in links_list[1:]:
-        nested_page_url = urljoin(BASE_URL, link)
-        nested_page = requests.get(nested_page_url).content
-        soup = BeautifulSoup(nested_page, "html.parser")
-        nested_page_links = soup.select(".nav-second-level li > a")
+        driver.get(link)
+        nested_page_links = driver.find_elements(
+            By.CSS_SELECTOR,
+            ".nav-second-level li > a")
         links_list.extend(
-            [urljoin(
-                BASE_URL, link_.get("href")
-            ) for link_ in nested_page_links]
+            [link_.get_attribute("href") for link_ in nested_page_links]
         )
 
     return links_list
@@ -92,8 +92,11 @@ def get_all_products_on_page(
 
 def accept_cookies(driver: WebDriver) -> None:
     driver.get(HOME_URL)
-    cookie_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
-    cookie_button.click()
+    try:
+        cookie_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
+        cookie_button.click()
+    except NoSuchElementException:
+        print("Button 'Accept Cookies' does not exist!")
 
 
 def write_to_csv_file(
@@ -132,7 +135,7 @@ def get_all_products() -> None:
     driver = webdriver.Chrome()
     accept_cookies(driver)
 
-    links_list = get_all_pages()
+    links_list = get_all_pages(driver=driver)
 
     for link in links_list:
         products = get_all_products_on_page(link=link, driver=driver)
