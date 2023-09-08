@@ -1,14 +1,15 @@
 import csv
-import time
 
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 
 
@@ -37,17 +38,6 @@ class Product:
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
-_driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
 
 def parse_single_product(product_soup: BeautifulSoup) -> Product:
     return Product(
@@ -67,17 +57,18 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
 
 def accept_cookie(driver: WebDriver) -> None:
     try:
-        cookie_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
+        cookie_button = WebDriverWait(driver, 1).until(
+            expected_conditions.presence_of_element_located(
+                (By.CLASS_NAME, "acceptCookies")
+            )
+        )
         cookie_button.click()
-        time.sleep(0.5)
-    except NoSuchElementException:
+    except (NoSuchElementException, TimeoutException):
         pass
 
 
-def more_button(url: str) -> BeautifulSoup:
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Edge(options=options)
+def more_button(driver: WebDriver, url: str) -> BeautifulSoup:
+
     driver.get(url)
 
     try:
@@ -88,15 +79,15 @@ def more_button(url: str) -> BeautifulSoup:
         more_but = None
 
     while more_but:
-        if more_but.is_displayed() is False:
+        if not more_but.is_displayed():
             break
         driver.execute_script("arguments[0].click();", more_but)
 
     return BeautifulSoup(driver.page_source, "html.parser")
 
 
-def get_single_page_products(url: str) -> [Product]:
-    soup = more_button(url)
+def get_single_page_products(driver: WebDriver, url: str) -> [Product]:
+    soup = more_button(driver, url)
     products = soup.select(".thumbnail")
 
     products_list = []
@@ -115,11 +106,13 @@ def write_products_to_csv(csv_output_path: str, products: [Product]) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Edge() as new_driver:
-        set_driver(new_driver)
+    options = Options()
+    options.add_argument("--headless")
+    driver = webdriver.Edge(options=options)
+    with driver as new_driver:
         for category, url in URLS.items():
             accept_cookie(new_driver)
-            products = get_single_page_products(url)
+            products = get_single_page_products(driver, url)
             write_products_to_csv(category, products)
 
 
