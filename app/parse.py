@@ -1,12 +1,14 @@
 import csv
 from dataclasses import dataclass
-from time import sleep
 from urllib.parse import urljoin
 
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver import ChromeOptions, Chrome
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -101,11 +103,18 @@ def parse_page(page_url: str,
             "ecomerce-items-scroll-more"
         )
         while more_btn.is_displayed():
+            WebDriverWait(driver, 10).until(
+                ec.visibility_of_element_located(
+                    (By.CLASS_NAME, "ecomerce-items-scroll-more")
+                )
+            )
             more_btn.click()
-            sleep(0.25)
 
     except NoSuchElementException:
         pass
+    except TimeoutException:
+        pass
+
     links_and_rating_data = get_links_and_rating_data(driver)
     return [
         parse_product_detail_page(
@@ -158,6 +167,7 @@ def get_all_products() -> None:
     for filename, page_url in target_files_with_pages.items():
         parsed_data = parse_page(page_url, driver)
         parsed_data_to_csv(filename, parsed_data)
+    driver.quit()
 
 
 if __name__ == "__main__":
