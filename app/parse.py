@@ -43,12 +43,23 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
     )
 
 
+def accept_cookies(driver: webdriver) -> None:
+    try:
+        cookie_btn = driver.find_element(
+            By.CLASS_NAME, "acceptCookies"
+        )
+        cookie_btn.click()
+    except NoSuchElementException:
+        pass
+
+
 def more_button(url: str) -> BeautifulSoup:
     driver = webdriver.Chrome()
     driver.get(url)
+    accept_cookies(driver)
 
     try:
-        more = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+        more = driver.find_element(By.CLASS_NAME, "ecommerce-items-scroll-more")
     except NoSuchElementException:
         more = None
 
