@@ -69,6 +69,7 @@ def more_button(url: str) -> BeautifulSoup:
             break
         driver.execute_script("arguments[0].click();", more)
 
+    driver.close()
     return BeautifulSoup(driver.page_source, "html.parser")
 
 
