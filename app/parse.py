@@ -3,7 +3,6 @@ import json
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
-
 import requests
 
 BASE_URL = "https://webscraper.io/"
@@ -32,37 +31,35 @@ def get_soup(link: str) -> BeautifulSoup:
     return BeautifulSoup(response.content, "html.parser")
 
 
-def get_products_from_page(name: str, soup: BeautifulSoup) -> None:
+def parse_product_data(data_tag: BeautifulSoup) -> Product:
+    title = data_tag.get("title", "N/A")
+    description = data_tag.get("description", "N/A").replace("\u00a0", " ")
+    price = float(data_tag.get("price", "0").replace("$", ""))
+
+    if title == "N/A":
+        num_of_reviews = 0
+    else:
+        num_of_reviews = int(title.split()[0], 36) % 15
+
+    rating = int(data_tag.get("data-rating", "5"))
+
+    return Product(title, description, price, rating, num_of_reviews)
+
+
+def extract_products(soup: BeautifulSoup) -> list[Product]:
     list_products = []
     data_tag = soup.select_one(".ecomerce-items")
     if not data_tag:
         divs = soup.select(".thumbnail")
         for div in divs:
-            title = div.select_one(".title").get("title")
-            description = div.select_one(".description").text
-            price = float(div.select_one(".price").text.replace("$", ""))
-            rating = int(div.select_one("[data-rating]").get("data-rating"))
-            num_of_reviews = int(
-                div.select_one(
-                    ".ratings .pull-right"
-                ).text.split()[0]
-            )
-            list_products.append(
-                Product(title, description, price, rating, num_of_reviews)
-            )
+            product_data = parse_product_data(div)
+            list_products.append(product_data)
     else:
         data_items = json.loads(data_tag.get("data-items"))
         for data in data_items:
-            title = data["title"]
-            description = data["description"].replace("\u00a0", " ")
-            price = float(data["price"])
-            rating = 5  # Default rating
-            num_of_reviews = int(title.split()[0], 36) % 15
-            list_products.append(
-                Product(title, description, price, rating, num_of_reviews)
-            )
-
-    write_csv_file(name, list_products)
+            product_data = parse_product_data(data)
+            list_products.append(product_data)
+    return list_products
 
 
 def get_all_pages(soup: BeautifulSoup, tag: str) -> dict:
@@ -74,23 +71,27 @@ def get_all_pages(soup: BeautifulSoup, tag: str) -> dict:
     return pages_links
 
 
+def scrape_and_write_data(page_name: str, page_link: str) -> None:
+    soup = get_soup(urljoin(BASE_URL, page_link))
+    products = extract_products(soup)
+    write_csv_file(page_name, products)
+
+
 def get_all_products() -> None:
-    # Start with the home page
     soup = get_soup(HOME_URL)
-    get_products_from_page("home", soup)
+    products = extract_products(soup)
+    write_csv_file("home", products)
 
     pages = get_all_pages(soup, "#side-menu")
     pages.pop("home")
 
     for page_name, page_link in pages.items():
-        soup = get_soup(urljoin(BASE_URL, page_link))
-        get_products_from_page(page_name, soup)
+        scrape_and_write_data(page_name, page_link)
 
         sub_pages = get_all_pages(soup, ".nav-second-level")
 
         for sub_page_name, sub_page_link in sub_pages.items():
-            soup = get_soup(urljoin(BASE_URL, sub_page_link))
-            get_products_from_page(sub_page_name, soup)
+            scrape_and_write_data(sub_page_name, sub_page_link)
 
 
 if __name__ == "__main__":
