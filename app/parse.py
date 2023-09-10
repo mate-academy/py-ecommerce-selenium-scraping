@@ -1,14 +1,15 @@
 import csv
 import logging
 from dataclasses import dataclass, astuple, fields
-from time import sleep
 from urllib.parse import urljoin
 
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.webdriver import WebDriver
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions
 from bs4 import BeautifulSoup, Tag
 from tqdm import tqdm
 
@@ -45,22 +46,37 @@ def set_driver() -> WebDriver:
     return driver
 
 
+def accept_cookies(driver: WebDriver) -> None:
+    try:
+        cookies_btn = WebDriverWait(driver, 1).until(
+            expected_conditions.presence_of_element_located(
+                (By.CLASS_NAME, "acceptCookies")
+            )
+        )
+        cookies_btn.click()
+        logging.info("Accepted 'Cookie'")
+    except TimeoutException:
+        logging.info("Button 'Cookie' not found")
+
+
 def get_page_source(url_to_parse: str, driver: WebDriver) -> str:
     url = urljoin(HOME_URL, url_to_parse)
     logging.info(f"Start parsing page {url}")
     driver.get(url)
+    accept_cookies(driver)
+    wait = WebDriverWait(driver, timeout=1)
 
     try:
-        sleep(1)
-        more_btn = driver.find_element(
-            by=By.CLASS_NAME, value="ecomerce-items-scroll-more"
+        more_btn = wait.until(
+            expected_conditions.presence_of_element_located(
+                (By.CLASS_NAME, "ecomerce-items-scroll-more")
+            )
         )
 
-        while more_btn.is_displayed():
+        while wait.until(lambda d: more_btn.is_displayed()):
             logging.info(f"Clicking 'More' button on {url}")
             more_btn.click()
-            sleep(0.2)
-    except NoSuchElementException:
+    except TimeoutException:
         logging.info(f"Button 'More' not found on {url}")
 
     return driver.page_source
