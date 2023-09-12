@@ -113,7 +113,7 @@ class Driver:
         self.driver.close()
 
 
-def write_products_to_csv(products: [Product], output_csv_path: str) -> None:
+def write_products_to_csv(products: list[Product], output_csv_path: str) -> None:
     with open(output_csv_path, "w") as file:
         writer = csv.writer(file)
         writer.writerow(PRODUCTS_FIELDS)
