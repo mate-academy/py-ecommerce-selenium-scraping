@@ -9,6 +9,7 @@ from selenium.common import (
     ElementNotInteractableException,
     TimeoutException
 )
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
@@ -39,14 +40,14 @@ class Product:
 FIELD_NAMES = [field.name for field in fields(Product)]
 
 
-def initialize_driver() -> webdriver.Chrome:
+def initialize_driver() -> WebDriver:
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(options=chrome_options)
     return driver
 
 
-def cookies_button(driver: webdriver.Chrome) -> None:
+def cookies_button(driver: WebDriver) -> None:
     while True:
         try:
             accept_cookies = (
@@ -63,7 +64,7 @@ def cookies_button(driver: webdriver.Chrome) -> None:
             break
 
 
-def show_more_button(driver: webdriver.Chrome) -> None:
+def show_more_button(driver: WebDriver) -> None:
     while True:
         try:
             more_button = WebDriverWait(driver, 5).until(
@@ -93,7 +94,7 @@ def parse_single_product(soup: BeautifulSoup) -> Product:
         price=float(soup.select_one(".price").text.replace("$", "")),
         rating=rating,
         num_of_reviews=int(
-            soup.select_one(".ratings > p.float-end").text.split()[0]
+            soup.select_one(".ratings > p.pull-right").text.split()[0]
         )
     )
 
@@ -122,7 +123,7 @@ def get_all_products() -> None:
         cookies_button(driver)
         html_code = driver.page_source
         soup = BeautifulSoup(html_code, "html.parser")
-        products_soup = soup.select(".card-body")
+        products_soup = soup.select(".thumbnail")
         products = [parse_single_product(product) for product in products_soup]
         write_product_to_csv(products, f"{name}.csv")
 
