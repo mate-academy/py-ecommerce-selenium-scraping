@@ -42,7 +42,7 @@ def parse_single_product(driver: WebDriver) -> Product:
         ),
         rating=5,
         num_of_reviews=int(driver.find_element(
-            By.CSS_SELECTOR, ".ratings > .pull-right"
+            By.CSS_SELECTOR, ".ratings > .float-end"
         ).text.split(" ")[0])
     )
     try:
@@ -97,51 +97,17 @@ class Driver:
         self.cookies_button()
         self.get_more_button()
 
-        products = self.driver.find_elements(By.CLASS_NAME, "thumbnail")
+        products = self.driver.find_elements(By.CLASS_NAME, "card-body")
         products_list = []
         for product in tqdm(products, desc="Processing"):
             products_list.append(parse_single_product(product))
         return products_list
 
-    def get_random_products_from_home(self) -> list[Product]:
-        self.driver.get(HOME_URL)
+    def get_products(self, url) -> list[Product]:
+        self.driver.get(url)
         products_list = self.get_page_of_products()
+
         return products_list
-
-    def get_random_computers(self) -> list[Product]:
-        url_computers = urljoin(HOME_URL, "computers/")
-        self.driver.get(url_computers)
-
-        computers_list = self.get_page_of_products()
-        return computers_list
-
-    def get_all_laptops(self) -> list[Product]:
-        url_laptops = urljoin(HOME_URL, "computers/laptops")
-        self.driver.get(url_laptops)
-
-        laptops_list = self.get_page_of_products()
-        return laptops_list
-
-    def get_all_tablets(self) -> list[Product]:
-        url_tablets = urljoin(HOME_URL, "computers/tablets")
-        self.driver.get(url_tablets)
-
-        tablets_list = self.get_page_of_products()
-        return tablets_list
-
-    def get_all_phones(self) -> list[Product]:
-        url_phones = urljoin(HOME_URL, "phones")
-        self.driver.get(url_phones)
-
-        phones_list = self.get_page_of_products()
-        return phones_list
-
-    def get_all_touch(self) -> list[Product]:
-        url_touch = urljoin(HOME_URL, "phones/touch")
-        self.driver.get(url_touch)
-
-        touch_list = self.get_page_of_products()
-        return touch_list
 
     def close_driver(self):
         self.driver.close()
@@ -157,23 +123,33 @@ def write_products_to_csv(products: [Product], output_csv_path: str) -> None:
 def get_all_products() -> None:
     driver = Driver()
 
-    products = driver.get_random_products_from_home()
-    write_products_to_csv(products, "home.csv")
+    url_computers = urljoin(HOME_URL, "computers/")
+    url_laptops = urljoin(HOME_URL, "computers/laptops")
+    url_tablets = urljoin(HOME_URL, "computers/tablets")
+    url_phones = urljoin(HOME_URL, "phones")
+    url_touch = urljoin(HOME_URL, "phones/touch")
 
-    computers = driver.get_random_computers()
-    write_products_to_csv(computers, "computers.csv")
+    urls = [
+        HOME_URL,
+        url_computers,
+        url_laptops,
+        url_tablets,
+        url_phones,
+        url_touch
+    ]
 
-    laptops = driver.get_all_laptops()
-    write_products_to_csv(laptops, "laptops.csv")
+    csv_files = [
+        "home.csv",
+        "computers.csv",
+        "laptops.csv",
+        "tablets.csv",
+        "phones.csv",
+        "touch.csv"
+    ]
 
-    tablets = driver.get_all_tablets()
-    write_products_to_csv(tablets, "tablets.csv")
-
-    phones = driver.get_all_phones()
-    write_products_to_csv(phones, "phones.csv")
-
-    touch = driver.get_all_touch()
-    write_products_to_csv(touch, "touch.csv")
+    for url, file in zip(urls, csv_files):
+        products = driver.get_products(url)
+        write_products_to_csv(products, file)
 
     driver.close_driver()
 
