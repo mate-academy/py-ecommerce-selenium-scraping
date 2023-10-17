@@ -30,21 +30,21 @@ class Product:
     rating: int
     num_of_reviews: int
 
-
-def get_product(driver: webdriver) -> Product:
-    return Product(
-        title=driver.find_element(By.CLASS_NAME, "title")
-                    .get_attribute("title"),
-        description=driver.find_element(By.CLASS_NAME, "description").text,
-        price=float(
-            driver.find_element(By.CLASS_NAME, "price").text.replace("$", "")
-        ),
-        rating=int(len(driver.find_elements(By.CLASS_NAME, "glyphicon-star"))),
-        num_of_reviews=int(
-            driver.find_element(By.CSS_SELECTOR, ".ratings .review-count")
-                        .text.split()[0]
-        ),
-    )
+    @classmethod
+    def get_product(cls, driver: webdriver) -> 'Product':
+        return cls(
+            title=driver.find_element(By.CLASS_NAME, "title")
+                        .get_attribute("title"),
+            description=driver.find_element(By.CLASS_NAME, "description").text,
+            price=float(
+                driver.find_element(By.CLASS_NAME, "price").text.replace("$", "")
+            ),
+            rating=int(len(driver.find_elements(By.CLASS_NAME, "glyphicon-star"))),
+            num_of_reviews=int(
+                driver.find_element(By.CSS_SELECTOR, ".ratings .review-count")
+                            .text.split()[0]
+            ),
+        )
 
 
 def parse_page(url: str, driver: webdriver) -> [Product]:
@@ -60,23 +60,22 @@ def parse_page(url: str, driver: webdriver) -> [Product]:
             driver.find_element(
                 By.CLASS_NAME, "ecomerce-items-scroll-more").click()
             time.sleep(0.2)
-    except selenium.common.exceptions.NoSuchElementException:
-        pass
-    except selenium.common.exceptions.ElementNotInteractableException:
+    except (selenium.common.exceptions.NoSuchElementException,
+            selenium.common.exceptions.ElementNotInteractableException):
         pass
 
     products = driver.find_elements(By.CLASS_NAME, "thumbnail")
-    return [get_product(product_driver) for product_driver in products]
+    return [Product.get_product(product_driver) for product_driver in products]
 
 
-def write_to_csv(products: [Product], path: str) -> None:
+def write_to_csv(products: list[Product], path: str) -> None:
     with open(path, "w", newline="",) as file:
         writer = DataclassWriter(file, products, Product)
         writer.write()
 
 
 def get_all_products() -> None:
-    pass
+
     with webdriver.Chrome(
             service=Service(ChromeDriverManager().install())) as driver:
         for url, path in URL_MAP.items():
