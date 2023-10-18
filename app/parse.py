@@ -14,21 +14,33 @@ from app.settings import lst_urls
 
 def get_name_csv_file(url: str) -> str:
     parts = url.split("/")
-    last_word = parts[-1] if parts[-1] else parts[-2]
-    if last_word == "more":
-        last_word = "home"
-    return last_word
+    last_word = parts[-1] or parts[-2]
+    return "home" if last_word == "more" else last_word
+
+
+def parse_single_product(product_card: webdriver) -> Product:
+    return Product(
+        title=product_card.find_element(By.CLASS_NAME, "title").get_attribute("title"),
+        description=product_card.find_element(By.CLASS_NAME, "card-text.description").text,
+        rating=len(product_card.find_elements(By.CLASS_NAME, "ws-icon.ws-icon-star")),
+        num_of_reviews=int(
+            re.sub(r"[^0-9]", "", product_card.find_element(By.CLASS_NAME, "ratings").text)
+        ),
+        price=float(
+            product_card.find_element(By.CLASS_NAME, "float-end.price.pull-right").text.replace(
+                "$", ""
+            )
+        ),
+    )
 
 
 def get_products(url: str, driver: webdriver) -> list[Product]:
     driver.get(url)
     if driver.find_elements(
-            By.CLASS_NAME,
-            "btn.btn-lg.btn-block.btn-primary.ecomerce-items-scroll-more"
+        By.CLASS_NAME, "btn.btn-lg.btn-block.btn-primary.ecomerce-items-scroll-more"
     ):
         more = driver.find_element(
-            By.CLASS_NAME,
-            "btn.btn-lg.btn-block.btn-primary.ecomerce-items-scroll-more"
+            By.CLASS_NAME, "btn.btn-lg.btn-block.btn-primary.ecomerce-items-scroll-more"
         )
         counter = len(driver.find_elements(By.CLASS_NAME, "card-body"))
 
@@ -42,42 +54,14 @@ def get_products(url: str, driver: webdriver) -> list[Product]:
 
             counter = counter_new
 
-    cards = driver.find_elements(By.CLASS_NAME, "card-body")
+    product_cards = driver.find_elements(By.CLASS_NAME, "card-body")
     products = []
-    for card in tqdm(cards, desc="Scraping Products"):
-        title = card.find_element(
-            By.CLASS_NAME, "title"
-        ).get_attribute("title")
-        description = card.find_element(
-            By.CLASS_NAME, "card-text.description"
-        ).text
-        rating = len(card.find_elements(
-            By.CLASS_NAME, "ws-icon.ws-icon-star"
-        ))
-        num_of_reviews = int(
-            re.sub(r"[^0-9]", "", card.find_element(
-                By.CLASS_NAME, "ratings"
-            ).text))
-        price = float(card.find_element(
-            By.CLASS_NAME, "float-end.price.pull-right"
-        ).text.replace("$", ""))
-
-        products.append(
-            Product(
-                title=title,
-                description=description,
-                price=price,
-                rating=rating,
-                num_of_reviews=num_of_reviews,
-            )
-        )
+    for product_card in tqdm(product_cards, desc="Scraping Products"):
+        products.append(parse_single_product(product_card))
     return products
 
 
-def write_products_to_csv(
-        products: list[Product],
-        output_csv_path: str
-) -> None:
+def write_products_to_csv(products: list[Product], output_csv_path: str) -> None:
     with open(output_csv_path, "w", encoding="utf-8", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(PRODUCT_FIELDS)
