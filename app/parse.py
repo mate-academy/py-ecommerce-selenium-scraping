@@ -1,5 +1,7 @@
 import csv
+import sys
 import time
+import logging
 
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
@@ -33,6 +35,16 @@ class Product:
 
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)8s]: %(message)s",
+    handlers=[
+        logging.FileHandler("parser.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
 
 
 def get_driver() -> Chrome:
@@ -87,9 +99,16 @@ def write_products_to_csv(products: [Product], path: str) -> None:
 def get_all_products() -> None:
     with get_driver() as driver:
         for file_name, url in URLS.items():
+            logging.info(f"Starting work with {file_name} url - {url}")
             products = get_page_products(url, driver)
+            logging.info(f"Starting write info to {file_name}.csv")
             write_products_to_csv(products=products, path=file_name)
+            logging.info(f"Scraping for {file_name} completed")
 
 
 if __name__ == "__main__":
+    start_time = time.perf_counter()
     get_all_products()
+    end_time = time.perf_counter()
+
+    print("Elapsed:", end_time - start_time)
