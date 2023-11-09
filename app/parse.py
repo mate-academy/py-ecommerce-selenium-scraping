@@ -107,8 +107,4 @@ def get_all_products() -> None:
 
 
 if __name__ == "__main__":
-    start_time = time.perf_counter()
     get_all_products()
-    end_time = time.perf_counter()
-
-    print("Elapsed:", end_time - start_time)
