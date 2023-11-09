@@ -1,9 +1,15 @@
+import unicodedata
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 from app.product import Product
 from app.csv_files.csv_writer import write_products_to_file
 from app.pages.more_btn_handler import handle_btn
+
+
+def normalize_description(description: str) -> str:
+    return unicodedata.normalize("NFKD", description).replace("\xa0", " ")
 
 
 def rating_parser(driver: webdriver, more_btn: bool) -> (webdriver, int):
@@ -34,8 +40,10 @@ def page_parser(
     for product in products:
         title_element = product.find_element(By.CLASS_NAME, "title")
         title = title_element.get_attribute("title")
+
         description_element = product.find_element(By.CLASS_NAME, "description")
         description = description_element.get_attribute("textContent")
+        description = normalize_description(description)
 
         price_element = product.find_element(By.CLASS_NAME, "price")
         price = price_element.get_attribute("textContent")
