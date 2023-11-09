@@ -48,7 +48,9 @@ def parse_single_product(product_soup: Tag) -> Product:
         description=product_soup.select_one(".description").text,
         price=float(product_soup.select_one(".price").text.replace("$", "")),
         rating=len(product_soup.select(".ratings span")),
-        num_of_reviews=int(product_soup.select_one(".review-count").text.split()[0]),
+        num_of_reviews=int(product_soup.select_one(
+            ".review-count"
+        ).text.split()[0]),
     )
 
 
