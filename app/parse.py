@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 from app.pages.page_parser import page_parser
 
 chrome_options = Options()
-chrome_options.add_argument('--headless')
+chrome_options.add_argument("--headless")
 
 driver = webdriver.Chrome(options=chrome_options)
 

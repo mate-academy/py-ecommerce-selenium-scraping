@@ -19,16 +19,15 @@ def rating_parser(driver: webdriver, more_btn: bool) -> (webdriver, int):
         return driver, len(span_elements)
     else:
         ratings_element = driver.find_element(By.CLASS_NAME, "ratings")
-        rating_element = ratings_element.find_element(By.XPATH, "//p[@data-rating]")
+        rating_element = ratings_element.find_element(
+            By.XPATH, "//p[@data-rating]"
+        )
         data_rating = rating_element.get_attribute("data-rating")
         return driver, int(data_rating)
 
 
 def page_parser(
-        url: str,
-        driver: webdriver,
-        file_name: str,
-        more_btn: bool = False
+    url: str, driver: webdriver, file_name: str, more_btn: bool = False
 ) -> list[Product]:
     products_list = []
     if more_btn:
@@ -41,7 +40,9 @@ def page_parser(
         title_element = product.find_element(By.CLASS_NAME, "title")
         title = title_element.get_attribute("title")
 
-        description_element = product.find_element(By.CLASS_NAME, "description")
+        description_element = product.find_element(
+            By.CLASS_NAME, "description"
+        )
         description = description_element.get_attribute("textContent")
         description = normalize_description(description)
 
@@ -51,7 +52,9 @@ def page_parser(
 
         driver, data_rating = rating_parser(driver, more_btn)
 
-        num_of_reviews_element = product.find_element(By.CLASS_NAME, "review-count")
+        num_of_reviews_element = product.find_element(
+            By.CLASS_NAME, "review-count"
+        )
         num_of_reviews = num_of_reviews_element.text
         num_of_reviews = int(num_of_reviews.split(" ")[0])
 
@@ -60,7 +63,7 @@ def page_parser(
             description=description,
             price=price,
             rating=data_rating,
-            num_of_reviews=num_of_reviews
+            num_of_reviews=num_of_reviews,
         )
         products_list.append(product)
 
