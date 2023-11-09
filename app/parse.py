@@ -35,9 +35,6 @@ def get_all_products() -> None:
     for received_product in received_products:
         products.extend(received_product)
 
-    for product in products:
-        print(product)
-
 
 if __name__ == "__main__":
     get_all_products()
