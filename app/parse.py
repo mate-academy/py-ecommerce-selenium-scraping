@@ -78,10 +78,10 @@ def press_button_more(driver: WebDriver) -> None:
 def parse_products(driver: WebDriver) -> list[Product]:
     card_bodies = driver.find_elements(By.CLASS_NAME, "card-body")
 
-    list_products = []
+    products = []
 
     for card_body in tqdm(card_bodies):
-        list_products.append(
+        products.append(
             Product(
                 title=card_body.find_element(
                     By.CLASS_NAME, "title"
@@ -108,7 +108,7 @@ def parse_products(driver: WebDriver) -> list[Product]:
                 ),
             )
         )
-    return list_products
+    return products
 
 
 def write_products_to_csv(file_path: str, products: list[Product]) -> None:
