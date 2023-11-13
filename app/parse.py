@@ -29,7 +29,7 @@ class Product:
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 
-def get_page_product(url: str, driver: WebDriver) -> list:
+def get_all_page_products(url: str, driver: WebDriver) -> list:
     driver.get(url)
 
     cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
@@ -89,7 +89,7 @@ def get_all_products() -> None:
     driver = Chrome()
     for name, url in PRODUCT_URL.items():
         page_url = BASE_URL + url
-        list_of_products = get_page_product(page_url, driver)
+        list_of_products = get_all_page_products(page_url, driver)
         write_product_to_csv(list_of_products, f"{name}.csv")
 
 
