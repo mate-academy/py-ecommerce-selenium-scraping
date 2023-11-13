@@ -26,7 +26,6 @@ def parse_single_product(card: WebElement) -> Product:
     price = float(
         card.find_element(By.CLASS_NAME, "price").text.replace("$", "")
     )
-    # rating_block = card.find_element(By.CLASS_NAME, "ratings")
     data_rating = len(card.find_elements(By.CLASS_NAME, "ws-icon-star"))
     num_of_reviews = int(
         card.find_element(By.CLASS_NAME, "review-count").text.replace(
