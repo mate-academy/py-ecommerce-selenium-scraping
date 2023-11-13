@@ -7,7 +7,7 @@ from urllib.parse import urljoin
 from unicodedata import normalize
 
 import httpx
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -50,8 +50,19 @@ TOUCH_PHONES_FILENAME = "touch.csv"
 TABLETS_FILENAME = "tablets.csv"
 LAPTOPS_FILENAME = "laptops.csv"
 
+PAGES_WITHOUT_PAGINATION = [HOME_URL, COMPUTERS_URL, PHONES_URL]
+PAGES_WITH_PAGINATION = [LAPTOPS_URL, TABLETS_URL, TOUCH_PHONES_URL]
+FILENAMES = [
+    HOME_PAGE_PRODUCTS_FILENAME,
+    COMPUTERS_FILENAME,
+    PHONES_FILENAME,
+    LAPTOPS_FILENAME,
+    TABLETS_FILENAME,
+    TOUCH_PHONES_FILENAME,
+]
 
-def get_product(product_soup: BeautifulSoup) -> Product:
+
+def get_product(product_soup: Tag) -> Product:
     title = product_soup.select_one(".title")
     if title is None:
         raise ValueError("Product title is None")
@@ -122,28 +133,18 @@ def write_to_csv(
 
 async def main() -> None:
     async with httpx.AsyncClient() as client:
-        tasks = [
-            get_products(HOME_URL, client),
-            get_products(COMPUTERS_URL, client),
-            get_products(PHONES_URL, client),
-            asyncio.to_thread(get_products_with_pagination, LAPTOPS_URL),
-            asyncio.to_thread(get_products_with_pagination, TABLETS_URL),
-            asyncio.to_thread(get_products_with_pagination, TOUCH_PHONES_URL),
+        tasks_without_pagination = [
+            get_products(url, client) for url in PAGES_WITHOUT_PAGINATION
         ]
-        (
-            home_page_products,
-            computers,
-            phones,
-            laptops,
-            tablets,
-            touch_phones,
-        ) = await asyncio.gather(*tasks)
-        write_to_csv(home_page_products, HOME_PAGE_PRODUCTS_FILENAME)
-        write_to_csv(computers, COMPUTERS_FILENAME)
-        write_to_csv(phones, PHONES_FILENAME)
-        write_to_csv(laptops, LAPTOPS_FILENAME)
-        write_to_csv(tablets, TABLETS_FILENAME)
-        write_to_csv(touch_phones, TOUCH_PHONES_FILENAME)
+        tasks_with_pagination = [
+            asyncio.to_thread(get_products_with_pagination, url)
+            for url in PAGES_WITH_PAGINATION
+        ]
+        results = await asyncio.gather(
+            *tasks_without_pagination, *tasks_with_pagination
+        )
+        for objects, filename in zip(results, FILENAMES):
+            write_to_csv(objects, filename)
 
 
 def get_all_products() -> None:
