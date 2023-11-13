@@ -5,10 +5,17 @@ from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import ElementNotInteractableException, ElementClickInterceptedException
+from selenium.common.exceptions import (
+    ElementNotInteractableException,
+    ElementClickInterceptedException,
+)
 
 PRODUCT_FIELDS = [
-    "title", "description", "price", "rating", "num_of_reviews",
+    "title",
+    "description",
+    "price",
+    "rating",
+    "num_of_reviews",
 ]
 
 BASE_URL = "https://webscraper.io/"
@@ -25,7 +32,7 @@ URLS = {
     "laptops": LAPTOPS_URL,
     "tablets": TABLETS_URL,
     "phones": PHONES_URL,
-    "touch": TOUCH_URL
+    "touch": TOUCH_URL,
 }
 
 
@@ -46,31 +53,46 @@ def write_to_csv(products: list[str], output_csv_path: str) -> None:
 
 
 def accept_cookies(driver: webdriver.Chrome) -> None:
-    accept_cookies_button = driver.find_elements(By.CLASS_NAME, "acceptCookies")
-    sleep(1)
-
+    accept_cookies_button = driver.find_elements(
+        By.CLASS_NAME, "acceptCookies"
+    )
     if accept_cookies_button:
+        sleep(1)
         accept_cookies_button[0].click()
 
 
-def parse_single_product(driver) -> list[Product]:
+def parse_single_product(driver: webdriver.Chrome) -> list[Product]:
     return [
         Product(
-            title=card.find_element(By.CLASS_NAME, "title").get_attribute("title"),
+            title=card.find_element(By.CLASS_NAME, "title").get_attribute(
+                "title"
+            ),
             description=card.find_element(By.CLASS_NAME, "description").text,
-            price_in_usd=float(card.find_element(By.CLASS_NAME, "price").text[1:]),
+            price_in_usd=float(
+                card.find_element(By.CLASS_NAME, "price").text[1:]
+            ),
             rating=len(card.find_elements(By.CLASS_NAME, "ws-icon-star")),
-            num_of_reviews=card.find_element(By.CLASS_NAME, "review-count").text.split(" ")[0],
-        ) for card in driver.find_elements(By.CLASS_NAME, "card-body")
+            num_of_reviews=int(
+                card.find_element(By.CLASS_NAME, "review-count").text.split(
+                    " "
+                )[0]
+            ),
+        )
+        for card in driver.find_elements(By.CLASS_NAME, "card-body")
     ]
 
 
-def show_more_products(driver):
-    if show_more_button := driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more"):
+def show_more_products(driver: webdriver.Chrome) -> None:
+    if show_more_button := driver.find_elements(
+        By.CLASS_NAME, "ecomerce-items-scroll-more"
+    ):
         while show_more_button[0].is_displayed():
             try:
                 show_more_button[0].click()
-            except (ElementNotInteractableException, ElementClickInterceptedException):
+            except (
+                ElementNotInteractableException,
+                ElementClickInterceptedException,
+            ):
                 print("Element is not clickable")
 
 
@@ -85,4 +107,4 @@ def get_all_products(urls: dict[str] = URLS) -> None:
 
 
 if __name__ == "__main__":
-        get_all_products()
+    get_all_products()
