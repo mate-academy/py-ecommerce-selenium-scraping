@@ -26,12 +26,10 @@ def parse_single_product(card: WebElement) -> Product:
     price = float(
         card.find_element(By.CLASS_NAME, "price").text.replace("$", "")
     )
-    rating_block = card.find_element(By.CLASS_NAME, "ratings")
-    data_rating = len(
-        rating_block.find_elements(By.CLASS_NAME, "ws-icon-star")
-    )
+    # rating_block = card.find_element(By.CLASS_NAME, "ratings")
+    data_rating = len(card.find_elements(By.CLASS_NAME, "ws-icon-star"))
     num_of_reviews = int(
-        rating_block.find_element(By.CLASS_NAME, "review-count").text.replace(
+        card.find_element(By.CLASS_NAME, "review-count").text.replace(
             " reviews", ""
         )
     )
@@ -79,19 +77,19 @@ def load_all_products(driver: Chrome) -> None:
 def get_all_products() -> None:
     driver = Chrome()
 
-    home_page_products = parse_products(driver, "")
-    computers_page_products = parse_products(driver, "computers")
-    laptops_page_products = parse_products(driver, "computers/laptops")
-    tablets_page_products = parse_products(driver, "computers/tablets")
-    phones_page_products = parse_products(driver, "phones")
-    touch_page_products = parse_products(driver, "phones/touch")
+    pages = [
+        "",
+        "computers",
+        "computers/laptops",
+        "computers/tablets",
+        "phones",
+        "phones/touch",
+    ]
+    file_names = ["home", "computers", "laptops", "tablets", "phones", "touch"]
 
-    write_to_csv(home_page_products, "home.csv")
-    write_to_csv(computers_page_products, "computers.csv")
-    write_to_csv(laptops_page_products, "laptops.csv")
-    write_to_csv(tablets_page_products, "tablets.csv")
-    write_to_csv(phones_page_products, "phones.csv")
-    write_to_csv(touch_page_products, "touch.csv")
+    for i in range(len(pages)):
+        products = parse_products(driver, pages[i])
+        write_to_csv(products, f"{file_names[i]}.csv")
 
 
 def write_to_csv(products: list[Product], output_csv_path: str) -> None:
