@@ -5,27 +5,26 @@ import logging
 
 from dataclasses import dataclass, astuple, fields
 from urllib.parse import urljoin
-
 from bs4 import BeautifulSoup, Tag
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 
 URLS = {
     "home": HOME_URL,
-    "computers": urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
+    "computers": urljoin(BASE_URL, "test-sites/e-commerce/more/computers/"),
     "laptops": urljoin(
-        BASE_URL, "test-sites/e-commerce/more/computers/laptops"
+        BASE_URL, "test-sites/e-commerce/more/computers/laptops/"
     ),
     "tablets": urljoin(
-        BASE_URL, "test-sites/e-commerce/more/computers/tablets"
+        BASE_URL, "test-sites/e-commerce/more/computers/tablets/"
     ),
-    "phones": urljoin(BASE_URL, "test-sites/e-commerce/more/phones"),
-    "touch": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+    "phones": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/"),
+    "touch": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch/"),
 }
 
 
@@ -61,7 +60,9 @@ def parse_single_product(product_soup: Tag) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
         description=product_soup.select_one(".description").text,
-        price=float(product_soup.select_one(".price").text.replace("$", "")),
+        price=float(
+            product_soup.select_one(".price").text.replace("$", "")
+        ),
         rating=len(product_soup.select(".ratings span")),
         num_of_reviews=int(
             product_soup.select_one(".review-count").text.split()[0]),
