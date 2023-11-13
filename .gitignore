@@ -6,4 +6,8 @@
 venv/
 .pytest_cache/
 **__pycache__/
-**.csv
+**/*.log
+.mypy.ini
+pyrightconfig.json
+*.csv
+.mypy_cache/
