@@ -1,12 +1,14 @@
 import csv
-import time
 from dataclasses import dataclass, astuple, fields
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import TimeoutException, ElementClickInterceptedException, \
+    ElementNotInteractableException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -46,23 +48,24 @@ def parse_single_page(
         page_url: str, output_csv_path: str, driver: webdriver
 ) -> None:
     driver.get(page_url)
+    wait = WebDriverWait(driver, 2)
     try:
-        time.sleep(0.1)
-        driver.find_element(By.ID, "closeCookieBanner").click()
-    except NoSuchElementException:
+        button = wait.until(
+            EC.element_to_be_clickable(
+                (By.ID, "closeCookieBanner")
+            )
+        )
+        button.click()
+    except TimeoutException:
         pass
 
     while True:
         try:
-            button = driver.find_element(
-                By.CLASS_NAME, "ecomerce-items-scroll-more"
-            )
-            if button.is_displayed():
-                button.click()
-                time.sleep(0.1)
-            else:
-                break
-        except NoSuchElementException:
+            button = wait.until(EC.presence_of_element_located(
+                (By.CLASS_NAME, "ecomerce-items-scroll-more")
+            ))
+            button.click()
+        except (TimeoutException, ElementClickInterceptedException, ElementNotInteractableException):
             break
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
