@@ -4,10 +4,13 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
-from selenium.common import TimeoutException, ElementClickInterceptedException, \
+from selenium.common import (
+    TimeoutException,
+    ElementClickInterceptedException,
     ElementNotInteractableException
+)
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
@@ -51,7 +54,7 @@ def parse_single_page(
     wait = WebDriverWait(driver, 2)
     try:
         button = wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.ID, "closeCookieBanner")
             )
         )
@@ -61,11 +64,15 @@ def parse_single_page(
 
     while True:
         try:
-            button = wait.until(EC.presence_of_element_located(
+            button = wait.until(ec.presence_of_element_located(
                 (By.CLASS_NAME, "ecomerce-items-scroll-more")
             ))
             button.click()
-        except (TimeoutException, ElementClickInterceptedException, ElementNotInteractableException):
+        except (
+                TimeoutException,
+                ElementClickInterceptedException,
+                ElementNotInteractableException
+        ):
             break
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
