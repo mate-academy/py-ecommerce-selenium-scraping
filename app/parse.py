@@ -39,7 +39,6 @@ def click_more_button(driver) -> None:
             style = more_button.get_attribute("style")
             while not style:
                 more_button.click()
-                time.sleep(1)
 
     except NoSuchElementException:
         pass
@@ -73,7 +72,6 @@ def get_products(driver) -> List[Product]:
             num_of_reviews=num_of_reviews[0],
             price=price[0]
         )
-        print(product)
         products.append(product)
 
     return products
