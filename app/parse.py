@@ -1,11 +1,15 @@
 import csv
-import time
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
-from selenium.common import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException
+from selenium.common import (
+    NoSuchElementException,
+    ElementClickInterceptedException,
+    ElementNotInteractableException,
+)
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.webdriver import WebDriver
 
 from selenium.webdriver.common.by import By
 
@@ -13,11 +17,23 @@ from selenium.webdriver.common.by import By
 BASE_URL = "https://webscraper.io/"
 PRODUCTS_URLS = {
     "home": (urljoin(BASE_URL, "test-sites/e-commerce/more/"), None),
-    "computers": (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/"), None),
+    "computers": (
+        urljoin(BASE_URL, "test-sites/e-commerce/more/computers/"),
+        None,
+    ),
     "phones": (urljoin(BASE_URL, "test-sites/e-commerce/more/phones/"), None),
-    "touch": (urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"), "pagination"),
-    "tablets": (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets"), "pagination"),
-    "laptops": (urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops"), "pagination"),
+    "touch": (
+        urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+        "pagination",
+    ),
+    "tablets": (
+        urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets"),
+        "pagination",
+    ),
+    "laptops": (
+        urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops"),
+        "pagination",
+    ),
 }
 
 
@@ -36,17 +52,17 @@ PRODUCT_FIELDS = [field.name for field in fields(Product)]
 class WebDriverSingleton:
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> WebDriver:
         if not cls._instance:
             cls._instance = super(WebDriverSingleton, cls).__new__(cls)
             chrome_options = Options()
-            chrome_options.add_argument('--headless')
+            chrome_options.add_argument("--headless")
             cls._instance.driver = Chrome(options=chrome_options)
 
         return cls._instance
 
     @staticmethod
-    def get_driver():
+    def get_driver() -> WebDriver:
         return WebDriverSingleton()._instance.driver
 
     @staticmethod
@@ -57,15 +73,17 @@ class WebDriverSingleton:
             WebDriverSingleton()._instance.driver = None
 
 
-def accept_cookies(driver: Chrome) -> None:
+def accept_cookies(driver: WebDriver) -> None:
     try:
-        accept_cookies_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
+        accept_cookies_button = driver.find_element(
+            By.CLASS_NAME, "acceptCookies"
+        )
         accept_cookies_button.click()
     except NoSuchElementException:
         pass
 
 
-def load_more_products(driver: Chrome) -> None:
+def load_more_products(driver: WebDriver) -> None:
     button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
     while "display: none;" not in button.get_attribute("style"):
         try:
@@ -76,17 +94,29 @@ def load_more_products(driver: Chrome) -> None:
             pass
 
 
-def parse_single_product(driver) -> Product:
+def parse_single_product(driver: WebDriver) -> Product:
     return Product(
-        title=driver.find_element(By.CSS_SELECTOR, ".title").get_attribute("title"),
+        title=driver.find_element(By.CSS_SELECTOR, ".title").get_attribute(
+            "title"
+        ),
         description=driver.find_element(By.CSS_SELECTOR, ".description").text,
-        price=float(driver.find_element(By.CSS_SELECTOR, ".price").text.replace("$", "")),
-        rating=int(len(driver.find_elements(By.CSS_SELECTOR, ".ws-icon-star"))),
-        num_of_reviews=int(driver.find_element(By.CSS_SELECTOR, ".review-count").text.split()[0]),
+        price=float(
+            driver.find_element(By.CSS_SELECTOR, ".price").text.replace(
+                "$", ""
+            )
+        ),
+        rating=int(
+            len(driver.find_elements(By.CSS_SELECTOR, ".ws-icon-star"))
+        ),
+        num_of_reviews=int(
+            driver.find_element(By.CSS_SELECTOR, ".review-count").text.split()[
+                0
+            ]
+        ),
     )
 
 
-def get_single_page_products(driver) -> [Product]:
+def get_single_page_products(driver: WebDriver) -> [Product]:
     products = driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
 
     return [parse_single_product(product) for product in products]
