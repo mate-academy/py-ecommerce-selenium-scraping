@@ -1,14 +1,19 @@
 import csv
-import time
 import logging
 from urllib.parse import urljoin
-from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import (
+    TimeoutException,
+    ElementClickInterceptedException,
+    ElementNotInteractableException
+)
+
 
 BASE_URL = "https://webscraper.io/"
 
@@ -74,15 +79,18 @@ def get_all_products() -> [Product]:
             cookies[0].click()
 
         try:
-            button_more = driver.find_element(
-                By.CLASS_NAME, "ecomerce-items-scroll-more"
+            button_more = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "ecomerce-items-scroll-more"))
             )
             while button_more.is_enabled() and button_more.is_displayed():
                 button_more.click()
-                time.sleep(1)
                 logging.info("Clicked")
-        except NoSuchElementException:
-            logging.info("No 'More' button found")
+        except (
+            TimeoutException,
+            ElementClickInterceptedException,
+            ElementNotInteractableException
+        ):
+            logging.info("'More' button is unavailable or not found")
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
