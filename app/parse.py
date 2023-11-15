@@ -1,15 +1,16 @@
 import csv
-import time
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
 from selenium import webdriver
 from selenium.common import (
-    NoSuchElementException,
+    ElementNotInteractableException, TimeoutException,
 )
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -77,16 +78,12 @@ def write_products_to_csv_file(
 def click_more_button(driver) -> None:
     while True:
         try:
-            more_button = driver.find_element(
-                By.CLASS_NAME, "ecomerce-items-scroll-more"
+            more_button = WebDriverWait(driver, 0.2).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, "ecomerce-items-scroll-more"))
             )
-        except NoSuchElementException:
-            break
-        else:
-            if not more_button.is_displayed():
-                break
             more_button.click()
-            time.sleep(0.1)
+        except (TimeoutException, ElementNotInteractableException):
+            break
 
 
 def accept_cookies(driver) -> None:
