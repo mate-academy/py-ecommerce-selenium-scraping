@@ -12,7 +12,7 @@ from selenium.common.exceptions import (
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions
 
 BASE_URL = "https://webscraper.io/"
 
@@ -57,7 +57,10 @@ def click_show_more(driver: WebDriver) -> None:
     while True:
         try:
             more_button = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".btn.ecomerce-items-scroll-more"))
+                expected_conditions.element_to_be_clickable((
+                    By.CSS_SELECTOR,
+                    ".btn.ecomerce-items-scroll-more"
+                ))
             )
             more_button.click()
         except (NoSuchElementException, ElementNotInteractableException,
@@ -75,11 +78,19 @@ def parse_single_product(soup: BeautifulSoup) -> Product:
     reviews_elem = soup.select_one(".ratings > p.pull-right")
 
     title = title_elem.get("title", "")
-    description = description_elem.text.replace("\xa0", " ") if description_elem else ""
+    description = description_elem.text.replace(
+        "\xa0",
+        " "
+    ) if description_elem else ""
     price = float(price_elem.text.replace("$", "")) if price_elem else 0.0
     num_of_reviews = int(reviews_elem.text.split()[0]) if reviews_elem else 0
 
-    return Product(title=title, description=description, price=price, rating=rating, num_of_reviews=num_of_reviews)
+    return Product(
+        title=title,
+        description=description,
+        price=price, rating=rating,
+        num_of_reviews=num_of_reviews
+    )
 
 
 def write_product_to_csv(products: list[Product], path: str) -> None:
@@ -87,7 +98,13 @@ def write_product_to_csv(products: list[Product], path: str) -> None:
         writer = csv.writer(file)
         writer.writerow(FIELD_NAMES)
         for product in products:
-            writer.writerow([product.title, product.description, product.price, product.rating, product.num_of_reviews])
+            writer.writerow(
+                [product.title,
+                 product.description,
+                 product.price,
+                 product.rating,
+                 product.num_of_reviews]
+            )
 
 
 def get_all_products() -> None:
