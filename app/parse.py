@@ -61,13 +61,21 @@ def more_button(url: str) -> BeautifulSoup:
     accept_cookies(driver)
 
     try:
-        more = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+        while True:
+            more = WebDriverWait(driver, 3).until(
+                EC.element_to_be_clickable((By.CLASS_NAME, "ecomerce-items-scroll-more"))
+            )
 
-        while more and more.is_displayed():
+            if not more.is_displayed():
+                break
+
             more.click()
+
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "thumbnail"))
+            )
     except NoSuchElementException:
         pass
-
     finally:
         return BeautifulSoup(driver.page_source, "html.parser")
 
