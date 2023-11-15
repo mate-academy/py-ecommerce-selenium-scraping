@@ -5,8 +5,11 @@ import csv
 
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
+from selenium.common import TimeoutException, NoSuchElementException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -42,43 +45,53 @@ def parse_single_product(product: Tag) -> Product:
     )
 
 
-def get_page_products(page_url: str, driver: WebDriver) -> list[Product]:
-    driver.get(page_url)
-    cookies = driver.find_elements(By.CLASS_NAME, "acceptCookies")
+def accept_cookies(driver: webdriver) -> None:
+    try:
+        cookie_btn = driver.find_element(
+            By.CLASS_NAME, "acceptCookies"
+        )
+        cookie_btn.click()
+    except NoSuchElementException:
+        pass
 
-    if cookies:
-        cookies[0].click()
 
-    button_more = driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")
+def more_button(url: str) -> BeautifulSoup:
+    driver = webdriver.Chrome()
+    driver.get(url)
+    accept_cookies(driver)
 
-    if button_more:
-        while button_more[0].is_displayed():
-            button_more[0].click()
-            time.sleep(0.1)
+    try:
+        more = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
 
-    page = driver.page_source
-    page_soup = BeautifulSoup(page, "html.parser")
+        while more and more.is_displayed():
+            more.click()
+    except NoSuchElementException:
+        pass
 
-    products = page_soup.select(".thumbnail")
+    finally:
+        return BeautifulSoup(driver.page_source, "html.parser")
 
-    return [parse_single_product(product) for product in products]
+
+def parse_from_pages(url: str) -> list[Product]:
+    soup = more_button(url)
+    products_info = soup.select(".thumbnail")
+    return [parse_single_product(product) for product in products_info]
 
 
 def write_products_to_csv(products: [Product], output_csv_path: str) -> None:
     with open(output_csv_path, "w") as file:
         writer = csv.writer(file)
         writer.writerow(PRODUCT_FIELDS)
-        writer.writerows([astuple(product) for product in products])
+        for product in products:
+            writer.writerow(astuple(product))
 
 
 def get_all_products() -> None:
-    driver = webdriver.Chrome()
     for name, url in URLS.items():
-        write_products_to_csv(
-            products=get_page_products(url, driver),
-            output_csv_path=f"{name}.csv"
-        )
+        products = parse_from_pages(url)
+        write_products_to_csv(products, f"{name}.csv")
 
 
 if __name__ == "__main__":
     get_all_products()
+
