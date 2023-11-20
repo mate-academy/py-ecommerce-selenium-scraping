@@ -2,12 +2,13 @@ import csv
 import re
 import time
 from dataclasses import dataclass
+from selenium.webdriver.support import expected_conditions as EC
 from typing import List
 from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.common import NoSuchElementException, ElementClickInterceptedException, ElementNotInteractableException
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.support.wait import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more")
@@ -37,11 +38,16 @@ def click_more_button(driver) -> None:
         if more_button:
             more_button = more_button[0]
             style = more_button.get_attribute("style")
+
             while not style:
                 more_button.click()
 
-    except NoSuchElementException:
-        pass
+                (WebDriverWait(driver, 1).
+                 until(EC.presence_of_element_located(
+                    (By.CLASS_NAME, "ecomerce-items-scroll-more"))))
+
+                style = more_button.get_attribute("style")
+
     except ElementClickInterceptedException:
         pass
     except ElementNotInteractableException:
