@@ -48,9 +48,7 @@ def click_more_button(driver) -> None:
 
                 style = more_button.get_attribute("style")
 
-    except ElementClickInterceptedException:
-        pass
-    except ElementNotInteractableException:
+    except [ElementClickInterceptedException, ElementNotInteractableException]:
         pass
 
 
