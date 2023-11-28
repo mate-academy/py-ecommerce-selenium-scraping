@@ -90,7 +90,7 @@ def accept_cookies(driver) -> None:
         pass
 
 
-def create_and_write_to_csv_file(url, products):
+def create_and_write_to_csv_file(url, products) -> None:
     category = url.split("/")[-1]
     csv_file_path = f"{category}.csv"
 
