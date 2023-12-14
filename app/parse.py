@@ -63,14 +63,16 @@ class ProductParser:
     @staticmethod
     def parse_single_product(product_soup: Tag) -> Product:
         return Product(
-            title=product_soup.select_one("a.title").text,
-            description=product_soup.select_one("p.description").text,
+            title=product_soup.select_one("a.title")["title"],
+            description=product_soup.select_one(
+                "p.description"
+            ).text.replace("\xa0", " "),
             price=float(
                 product_soup.select_one("h4.price").text.replace("$", "")
             ),
             rating=len(product_soup.select(".ws-icon-star")),
             num_of_reviews=int(
-                product_soup.select_one("p.review-count").text.strip()[0]
+                product_soup.select_one("p.review-count").text.split()[0]
             )
         )
 
