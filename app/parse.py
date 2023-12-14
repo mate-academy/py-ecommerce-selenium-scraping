@@ -38,7 +38,9 @@ class Product:
 
 class ProductParser:
     def __init__(self) -> None:
-        self.driver = Chrome(options=Options().add_argument("--headless"))
+        options = Options()
+        options.add_argument("--headless")
+        self.driver = Chrome(options=options)
 
     def quit_driver(self) -> None:
         if self.driver:
@@ -52,7 +54,9 @@ class ProductParser:
             return None
 
     def accept_cookies(self) -> None:
-        accept_button = self.find_element_safe(By.CSS_SELECTOR, "a.acceptCookies")
+        accept_button = self.find_element_safe(
+            By.CSS_SELECTOR, "a.acceptCookies"
+        )
         if accept_button:
             accept_button.click()
 
@@ -66,7 +70,7 @@ class ProductParser:
             ),
             rating=len(product_soup.select(".ws-icon-star")),
             num_of_reviews=int(
-                product_soup.select_one(".review-count").text.strip()[0]
+                product_soup.select_one("p.review-count").text.strip()[0]
             )
         )
 
@@ -78,8 +82,13 @@ class ProductParser:
             'a.ecomerce-items-scroll-more:not([style*="none"])'
         )
         while more_button:
-            if more_button.is_enabled() and more_button.is_displayed():
-                self.driver.execute_script("arguments[0].click();", more_button)
+            if (
+                more_button.is_enabled()
+                and more_button.is_displayed()
+            ):
+                self.driver.execute_script(
+                    "arguments[0].click();", more_button
+                )
                 more_button = self.find_element_safe(
                     By.CSS_SELECTOR,
                     'a.ecomerce-items-scroll-more:not([style*="none"])'
@@ -97,7 +106,7 @@ class ProductParser:
 
     def parse_and_write_to_csv(self, url: str, filename: str) -> None:
         products = self.parse_page(url)
-        with open(filename, "w") as file:
+        with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow([field.name for field in fields(Product)])
             writer.writerows([astuple(product) for product in products])
