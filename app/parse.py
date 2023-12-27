@@ -2,10 +2,11 @@ import csv
 from dataclasses import dataclass
 from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -20,12 +21,12 @@ class Product:
     num_of_reviews: int
 
 
-def parse_single_product(product_soup: BeautifulSoup) -> Product:
+def parse_single_product(product_soup: Tag) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(
-            "p.description"
-        ).text.replace("\xa0", " "),
+        description=product_soup.select_one("p.description").text.replace(
+            "\xa0", " "
+        ),
         price=float(product_soup.select_one(".price").text[1:]),
         rating=len(product_soup.select("span.ws-icon-star")),
         num_of_reviews=int(
@@ -49,21 +50,19 @@ def parse_all_products_from_page(url: str, driver: WebDriver) -> list[Product]:
     soup = BeautifulSoup(driver.page_source, "html.parser")
 
     products_soup = soup.select(".thumbnail")
-    result = [parse_single_product(ps) for ps in products_soup]
+    result = [parse_single_product(one_soup) for one_soup in products_soup]
 
     return result
 
 
-def write_products_to_csv(
-        products: list[Product], csv_file_path: str
-) -> None:
+def write_products_to_csv(products: list[Product], csv_file_path: str) -> None:
     with open(csv_file_path, "w", newline="") as csv_file:
         fieldnames = [
             "title",
             "description",
             "price",
             "rating",
-            "num_of_reviews"
+            "num_of_reviews",
         ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
@@ -90,13 +89,16 @@ def get_all_products() -> None:
         "tablets": urljoin(HOME_URL, "computers/tablets"),
         "laptops": urljoin(HOME_URL, "computers/laptops"),
     }
-    for name, url in pages.items():
-        driver = webdriver.Chrome()
-        products = parse_all_products_from_page(url, driver)
+    for name, url in tqdm(
+        pages.items(), desc="Processing Pages", dynamic_ncols=True
+    ):
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")
 
-        write_products_to_csv(products, f"{name}.csv")
+        with webdriver.Chrome(options=options) as driver:
+            products = parse_all_products_from_page(url, driver)
 
-        driver.close()
+            write_products_to_csv(products, f"{name}.csv")
 
 
 if __name__ == "__main__":
