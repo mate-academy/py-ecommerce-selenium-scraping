@@ -61,9 +61,12 @@ def get_all_products_from_page(url: str, driver: WebDriver) -> list[Product]:
     soup = BeautifulSoup(driver.page_source, "html.parser")
 
     products_soup = soup.select(".thumbnail")
-    result = [parse_single_product(product_soup) for product_soup in products_soup]
+    result = [
+        parse_single_product(product_soup) for product_soup in products_soup
+    ]
 
     return result
+
 
 def write_products_to_csv(
         products: list[Product],
