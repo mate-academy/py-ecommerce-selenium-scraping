@@ -32,23 +32,23 @@ class Product:
     rating: int
     num_of_reviews: int
 
-
-def parse_single_product(product_soup: BeautifulSoup) -> Product:
-    return Product(
-        title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(
-            ".description"
-        ).text.strip().replace("\xa0", " "),
-        price=float(product_soup.select_one(".price").text.strip("$")),
-        rating=len(
-            product_soup.find_all("span", class_="ws-icon ws-icon-star")
-        ),
-        num_of_reviews=int(
-            product_soup.select_one(
-                "div.ratings > p.review-count"
-            ).text.split()[0]
-        ),
-    )
+    @classmethod
+    def parse_single_product(cls, product_soup: BeautifulSoup) -> "Product":
+        return cls(
+            title=product_soup.select_one(".title")["title"],
+            description=product_soup.select_one(
+                ".description"
+            ).text.strip().replace("\xa0", " "),
+            price=float(product_soup.select_one(".price").text.strip("$")),
+            rating=len(
+                product_soup.find_all("span", class_="ws-icon ws-icon-star")
+            ),
+            num_of_reviews=int(
+                product_soup.select_one(
+                    "div.ratings > p.review-count"
+                ).text.split()[0]
+            ),
+        )
 
 
 def load_more(driver: webdriver.Chrome) -> None:
@@ -72,7 +72,7 @@ def get_page_products(driver: webdriver.Chrome, url: str) -> [Product]:
     load_more(driver)
     soup = BeautifulSoup(driver.page_source, "html.parser")
     return [
-        parse_single_product(product)
+        Product.parse_single_product(product)
         for product in soup.select(".thumbnail")
     ]
 
