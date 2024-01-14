@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from typing import Optional
+
 
 BASE_URL = "https://webscraper.io/"
 
@@ -33,19 +35,24 @@ class Product:
     rating: int
     num_of_reviews: int
 
+    @staticmethod
+    def parse_single_product(product_soup: Tag) -> "Product":
+        return Product(
+            title=product_soup.select_one(".title")["title"],
+            description=product_soup.select_one("p.description").text.replace(
+                "\xa0", " "
+            ),
+            price=float(product_soup.select_one(".price").text[1:]),
+            rating=len(product_soup.select("span.ws-icon-star")),
+            num_of_reviews=int(
+                product_soup.select_one(".review-count").text.split()[0]
+            ),
+        )
+
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 _driver: WebDriver | None = None
-
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
 
 
 def parse_single_product(product_soup: Tag) -> Product:
@@ -63,7 +70,7 @@ def parse_single_product(product_soup: Tag) -> Product:
 
 
 def parse_page(url: str) -> [Product]:
-    driver = get_driver()
+    driver = _driver
     driver.get(url)
     try:
         more_button = driver.find_element(By.CLASS_NAME, "btn")
@@ -76,7 +83,7 @@ def parse_page(url: str) -> [Product]:
     soup = BeautifulSoup(driver.page_source, "html.parser")
 
     product_cards = soup.select(".thumbnail")
-    products = [parse_single_product(product) for product in product_cards]
+    products = [Product.parse_single_product(product) for product in product_cards]
 
     return products
 
@@ -89,8 +96,9 @@ def write_products_to_csv(products: [Product], file_name: str) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as new_deriver:
-        set_driver(new_deriver)
+    with webdriver.Chrome() as new_driver:
+        global _driver
+        _driver = new_driver
         for file_name, url in URLS.items():
             products = parse_page(url=url)
             write_products_to_csv(products=products, file_name=file_name)
