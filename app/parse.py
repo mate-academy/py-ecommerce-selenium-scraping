@@ -27,7 +27,9 @@ class Product:
             description=product_soup.select_one(".description").text.replace(
                 "\xa0", " "
             ),
-            price=float(product_soup.select_one(".price").text.replace("$", "")),
+            price=float(
+                product_soup.select_one(".price").text.replace("$", "")
+            ),
             rating=len(product_soup.select(".ws-icon-star")),
             num_of_reviews=int(
                 product_soup.select_one(
@@ -61,7 +63,10 @@ def get_all_products_from_page(driver: WebDriver, link: str) -> list:
 
     products = page_soup.select(".thumbnail")
 
-    return [Product.parse_single_product(product_soup) for product_soup in products]
+    return [
+        Product.parse_single_product(product_soup)
+        for product_soup in products
+    ]
 
 
 def get_links_from_side_menu(driver: WebDriver) -> list[str]:
