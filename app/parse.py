@@ -20,39 +20,27 @@ class Product:
     rating: int
     num_of_reviews: int
 
+    @classmethod
+    def parse_single_product(cls, product_soup: BeautifulSoup) -> "Product":
+        return cls(
+            title=product_soup.select_one(".title")["title"],
+            description=product_soup.select_one(".description").text.replace(
+                "\xa0", " "
+            ),
+            price=float(product_soup.select_one(".price").text.replace("$", "")),
+            rating=len(product_soup.select(".ws-icon-star")),
+            num_of_reviews=int(
+                product_soup.select_one(
+                    ".ratings > p.review-count"
+                ).text.split()[0]
+            ),
+        )
+
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
-_driver: WebDriver | None = None
 
-
-def get_driver() -> WebDriver:
-    return _driver
-
-
-def set_driver(new_driver: WebDriver) -> None:
-    global _driver
-    _driver = new_driver
-
-
-def parse_single_product(product_soup: BeautifulSoup) -> Product:
-    return Product(
-        title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text.replace(
-            "\xa0", " "
-        ),
-        price=float(product_soup.select_one(".price").text.replace("$", "")),
-        rating=len(product_soup.select(".ws-icon-star")),
-        num_of_reviews=int(
-            product_soup.select_one(
-                ".ratings > p.review-count"
-            ).text.split()[0]
-        ),
-    )
-
-
-def get_all_products_from_page(link: str) -> list:
-    driver = get_driver()
+def get_all_products_from_page(driver: WebDriver, link: str) -> list:
     driver.get(link)
 
     cookies_button = driver.find_elements(By.CLASS_NAME, "acceptCookies")
@@ -73,11 +61,10 @@ def get_all_products_from_page(link: str) -> list:
 
     products = page_soup.select(".thumbnail")
 
-    return [parse_single_product(product_soup) for product_soup in products]
+    return [Product.parse_single_product(product_soup) for product_soup in products]
 
 
-def get_links_from_side_menu() -> list[str]:
-    driver = get_driver()
+def get_links_from_side_menu(driver: WebDriver) -> list[str]:
     driver.get(HOME_URL)
 
     side_menu = driver.find_element(By.ID, "side-menu")
@@ -123,14 +110,12 @@ def write_products_to_csv(csv_path: str, products: [Product]) -> None:
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-
-        links = get_links_from_side_menu()
+    with webdriver.Chrome() as driver:
+        links = get_links_from_side_menu(driver)
         links_with_titles = create_file_titles_for_each_link(links)
 
         for title, link in links_with_titles.items():
-            products = get_all_products_from_page(link)
+            products = get_all_products_from_page(driver, link)
 
             write_products_to_csv(title, products)
 
