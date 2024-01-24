@@ -4,6 +4,7 @@ from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
 from selenium import webdriver
+from selenium.common import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -48,15 +49,37 @@ def handle_cookies(driver: WebDriver) -> None:
         pass
 
 
-def handle_more_button(driver: WebDriver) -> None:
-    while True:
-        try:
-            more_button = WebDriverWait(driver, 1).until(
-                expected_conditions.element_to_be_clickable(
-                    (By.CLASS_NAME, "ecomerce-items-scroll-more")
-                )
+def click_more_button(driver: WebDriver) -> None:
+    try:
+        more_button = WebDriverWait(driver, 1).until(
+            expected_conditions.element_to_be_clickable(
+                (By.CLASS_NAME, "ecomerce-items-scroll-more")
             )
-            more_button.click()
+        )
+        more_button.click()
+    except TimeoutException:
+        pass
+
+
+def handle_more_button(driver: WebDriver) -> None:
+    previous_product_elements = len(
+        driver.find_elements(By.CLASS_NAME, "thumbnail")
+    )
+    counter = 0
+
+    while counter < 5:
+        try:
+            click_more_button(driver)
+            current_product_elements = len(
+                driver.find_elements(By.CLASS_NAME, "thumbnail")
+            )
+
+            if current_product_elements != previous_product_elements:
+                counter = 0
+                continue
+
+            counter += 1
+            previous_product_elements = current_product_elements
         except Exception:
             break
 
