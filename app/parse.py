@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
+from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -57,7 +58,7 @@ def get_links_to_parse() -> list[str]:
     links = [link.get_attribute("href") for link in nav_items]
 
     sub_links = []
-    for link in links:
+    for link in tqdm(links, desc="Main Links", unit="link"):
         driver.get(link)
 
         subcategory_links = driver.find_elements(
@@ -147,7 +148,9 @@ def get_all_products() -> NoReturn:
         urls = get_links_to_parse()
         titles = get_csv_title(urls)
 
-        for url, title in zip(urls, titles):
+        for url, title in tqdm(
+            zip(urls, titles), desc="Processing Pages", unit="page"
+        ):
             products = get_soup_products(url=url)
             write_products_to_csv(title, products)
 
