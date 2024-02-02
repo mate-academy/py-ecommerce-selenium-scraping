@@ -6,15 +6,13 @@ from dataclasses import dataclass, fields, astuple
 from typing import NoReturn
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common import TimeoutException
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -36,7 +34,7 @@ PRODUCT_FIELDS = [field.name for field in fields(Product)]
 logging.basicConfig(
     level=logging.INFO,
     format="[%(levelname)8s]: %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 
 
@@ -62,7 +60,9 @@ def get_links_to_parse() -> list[str]:
     for link in links:
         driver.get(link)
 
-        subcategory_links = driver.find_elements(By.CLASS_NAME, "subcategory-link")
+        subcategory_links = driver.find_elements(
+            By.CLASS_NAME, "subcategory-link"
+        )
         if subcategory_links:
             for subcategory_link in subcategory_links:
                 sub_links.append(subcategory_link.get_attribute("href"))
@@ -74,10 +74,14 @@ def get_links_to_parse() -> list[str]:
 def parse_single_product(product_soup: BeautifulSoup) -> Product:
     return Product(
         title=product_soup.select_one(".title")["title"],
-        description=product_soup.select_one(".description").text.replace("\xa0", " "),
+        description=product_soup.select_one(".description").text.replace(
+            "\xa0", " "
+        ),
         price=float(product_soup.select_one(".price").text.replace("$", "")),
         rating=len(product_soup.select(".ws-icon-star")),
-        num_of_reviews=int(product_soup.select_one(".review-count").text.split()[0])
+        num_of_reviews=int(
+            product_soup.select_one(".review-count").text.split()[0]
+        ),
     )
 
 
@@ -87,15 +91,19 @@ def get_soup_products(url: str) -> list:
     driver.get(url)
 
     try:
-        cookies_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable(
-            (By.CLASS_NAME, "acceptCookies")))
+        cookies_button = WebDriverWait(driver, 10).until(
+            ec.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
+        )
         cookies_button.click()
     except Exception:
         pass
 
     try:
-        more_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable(
-            (By.CLASS_NAME, "ecomerce-items-scroll-more")))
+        more_button = WebDriverWait(driver, 3).until(
+            ec.element_to_be_clickable(
+                (By.CLASS_NAME, "ecomerce-items-scroll-more")
+            )
+        )
     except TimeoutException:
         logging.info("No 'Load more' button found.")
         more_button = None
@@ -112,7 +120,14 @@ def get_soup_products(url: str) -> list:
 
 
 def get_csv_title(urls: list[str]) -> list[str]:
-    return [url.split("/")[-1] + ".csv" if url.split("/")[-1] != "more" else "home.csv" for url in urls]
+    return [
+        (
+            url.split("/")[-1] + ".csv"
+            if url.split("/")[-1] != "more"
+            else "home.csv"
+        )
+        for url in urls
+    ]
 
 
 def write_products_to_csv(csv_path: str, products: [Product]) -> NoReturn:
