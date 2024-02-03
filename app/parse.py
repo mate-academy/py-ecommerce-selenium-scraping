@@ -8,7 +8,6 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
@@ -96,22 +95,16 @@ def get_soup_products(url: str) -> list:
             ec.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
         )
         cookies_button.click()
+
     except Exception:
         pass
 
-    try:
-        more_button = WebDriverWait(driver, 3).until(
-            ec.element_to_be_clickable(
-                (By.CLASS_NAME, "ecomerce-items-scroll-more")
-            )
-        )
-    except TimeoutException:
-        logging.info("No 'Load more' button found.")
-        more_button = None
-
+    more_button = driver.find_elements(
+        By.CLASS_NAME, "ecomerce-items-scroll-more"
+    )
     if more_button:
-        while more_button.is_displayed():
-            more_button.click()
+        while more_button[0].is_displayed():
+            more_button[0].click()
             time.sleep(1)
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
