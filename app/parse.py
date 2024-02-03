@@ -28,7 +28,6 @@ class Product:
 
 
 _driver: WebDriver | None = None
-PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 
 logging.basicConfig(
@@ -127,7 +126,7 @@ def get_csv_title(urls: list[str]) -> list[str]:
 def write_products_to_csv(csv_path: str, products: [Product]) -> NoReturn:
     with open(csv_path, "w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
-        writer.writerow(PRODUCT_FIELDS)
+        writer.writerow([field.name for field in fields(Product)])
         writer.writerows([astuple(product) for product in products])
 
 
