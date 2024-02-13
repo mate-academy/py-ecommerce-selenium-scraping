@@ -72,72 +72,23 @@ def start_accept_cookies_get_list_main_url(url: str) -> list[str]:
     return main_url_list
 
 
-def get_products_url_from_one_page(
-    products_list: list[WebElement],
-) -> list[str]:
-    products_urls = []
-    for product in products_list:
-        some_url = product.find_element(
-            By.CSS_SELECTOR, ".caption > h4 > a[href]"
-        ).get_attribute("href")
-        products_urls.append(some_url)
-    return products_urls
-
-
-def get_one_product_price(driver: WebDriver) -> dict[str, float] | float:
-    logging.info("Getting product price")
-    card_body_element = driver.find_element(By.CLASS_NAME, "card-body")
-    try:
-        memory = card_body_element.find_element(By.CLASS_NAME, "memory")
-    except NoSuchElementException:
-        memory = None
-    if memory is not None:
-        swatches = driver.find_element(By.CLASS_NAME, "swatches")
-        buttons = swatches.find_elements(By.TAG_NAME, "button")
-        prices = {}
-        for button in buttons:
-            if not button.get_property("disabled"):
-                button.click()
-                prices[button.get_property("value")] = float(
-                    driver.find_element(By.CLASS_NAME, "price").text.replace(
-                        "$", ""
-                    )
-                )
-    else:
-        prices = driver.find_element(By.CLASS_NAME, "price").text.replace(
-            "$", ""
-        )
-    logging.info(f"Product price: {prices}")
-    return prices
-
-
-def get_another_products_element(driver: WebDriver) -> list[str]:
-    logging.info("Getting another products")
-    description = driver.find_element(By.CLASS_NAME, "description").text
-    title = driver.find_element(By.CLASS_NAME, "title").text
-    review_count_element = driver.find_element(By.CLASS_NAME, "review-count")
-    num_of_review = review_count_element.text
-    rating = len(
-        review_count_element.find_elements(By.CLASS_NAME, "ws-icon-star")
+def get_one_product(item: WebElement) -> Product:
+    logging.info("Getting one products")
+    description = item.find_element(By.CLASS_NAME, "description").text
+    price = float(
+        item.find_element(By.CLASS_NAME, "price").text.replace("$", "")
     )
+    title = item.find_element(By.CLASS_NAME, "title").get_attribute("title")
+    review_count_element = item.find_element(By.CLASS_NAME, "review-count")
+    num_of_review = int(review_count_element.text.split()[0])
+    rating_div = item.find_element(By.CLASS_NAME, "ratings")
+    rating = len(rating_div.find_elements(By.CLASS_NAME, "ws-icon-star"))
     logging.info(
         f"Product title: {title}"
         f"  description: {description}"
         f"  rating: {rating}"
         f" Number of reviews: {num_of_review}"
     )
-    return [title, description, rating, num_of_review]
-
-
-def get_one_product(url: str) -> Product:
-    logging.info(f"Getting product {url}")
-    driver = get_driver()
-    driver.get(url)
-    price = get_one_product_price(driver)
-    title, description, rating, num_of_review = get_another_products_element(
-        driver
-    )
-    logging.info(f"Finish parse one product {url}")
     return Product(
         title=title,
         description=description,
@@ -187,9 +138,8 @@ def parse_products_one_page(url: str) -> list:
     subcategories_urls = get_urls_subcategories(driver)
     click_next_page(driver)
     products_list = driver.find_elements(By.CLASS_NAME, "thumbnail")
-    products_urls = get_products_url_from_one_page(products_list)
-    for some_url in products_urls:
-        product = get_one_product(some_url)
+    for item in products_list:
+        product = get_one_product(item)
         result.append(product)
     logging.info(f"Finish parsing {url} num products is: {len(result)}")
     return [result, subcategories_urls]
@@ -204,6 +154,8 @@ def get_all_products() -> None:
         for url in main_url_list:
             item, subcategory_urls = parse_products_one_page(url)
             name = url.split("/")[-1]
+            if name == "more":
+                name = "home"
             item_dict.update({name: item})
             if subcategory_urls:
                 for sub_url in subcategory_urls:
