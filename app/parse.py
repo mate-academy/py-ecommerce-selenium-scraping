@@ -8,14 +8,15 @@ from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 
 BASE_URL = "https://webscraper.io/"
+HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more")
 
 pages_dict = {
-    "home": "test-sites/e-commerce/more/",
-    "computers": "/test-sites/e-commerce/more/computers",
-    "laptops": "/test-sites/e-commerce/more/computers/laptops",
-    "tablets": "/test-sites/e-commerce/more/computers/tablets",
-    "phones": "/test-sites/e-commerce/more/phones",
-    "touch": "/test-sites/e-commerce/more/phones/touch"
+    "home": "/",
+    "computers": "/computers",
+    "laptops": "/computers/laptops",
+    "tablets": "/computers/tablets",
+    "phones": "/phones",
+    "touch": "/phones/touch"
 }
 
 
@@ -81,7 +82,7 @@ def write_vacancies_to_csv(products: [Product], output_csv_path: str) -> None:
 
 def get_all_products() -> [Product]:
     for name, path in pages_dict.items():
-        url = urljoin(BASE_URL, path)
+        url = HOME_URL + path
 
         all_products = parse_all_products_on_page(url)
 
