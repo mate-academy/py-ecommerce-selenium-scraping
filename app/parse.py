@@ -1,6 +1,9 @@
 import csv
+import logging
+import sys
 import time
 from dataclasses import dataclass, fields, astuple
+from datetime import datetime
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -12,6 +15,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
+from tqdm import tqdm
 
 
 BASE_URL = "https://webscraper.io/"
@@ -28,6 +32,15 @@ URLS = {
     "phones": urljoin(BASE_URL, "test-sites/e-commerce/more/phones"),
     "touch": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
 }
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)8s]: %(message)s",
+    handlers=[
+        logging.FileHandler("parser.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
 
 
 class WebDriverSingleton:
@@ -60,13 +73,16 @@ def accept_cookies(page_url):
     new_driver.get(page_url)
 
     try:
-        wait = WebDriverWait(new_driver, 10)  # Wait for up to 10 seconds
+        wait = WebDriverWait(new_driver, 10)
         accept_button = wait.until(
             EC.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
         )
         accept_button.click()
     except (NoSuchElementException, TimeoutException):
-        print("No accept cookies button found, proceeding")
+        logging.info(
+            f"No accept cookies button found, proceeding. "
+            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
 
 
 def press_more_button(page_url) -> str:
@@ -90,7 +106,10 @@ def press_more_button(page_url) -> str:
                 )
             )
     except (NoSuchElementException, TimeoutException):
-        print("More button not found or not clickable, proceeding.")
+        logging.info(
+            f"Reach the bottom of page.  "
+            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
 
     page = new_driver.page_source
     return page
@@ -110,14 +129,20 @@ def parse_single_product(product_soup: BeautifulSoup) -> Product:
 
 def get_products_on_page(page_soup: BeautifulSoup) -> [Product]:
     products = page_soup.select(".card-body")
-
+    logging.info(
+        f"Found {len(products)} items. "
+        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     return [parse_single_product(product) for product in products]
 
 
 def get_all_products() -> None:
 
-    for csv_name, url in URLS.items():
-        print(url)
+    for csv_name, url in tqdm(URLS.items(), desc="Processing URLs"):
+        logging.info(
+            f"Processing {url}."
+            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         accept_cookies(url)
         products = []
         page = requests.get(url).content
@@ -135,10 +160,15 @@ def get_all_products() -> None:
 
 def csv_output(products: [Product], csv_name: str) -> None:
     filename = csv_name + ".csv"
+
     with open(filename, "w") as file:
         writer = csv.writer(file)
         writer.writerow(CSV_FIELDS)
         writer.writerows([astuple(product) for product in products])
+        logging.info(
+            f"Wrote {len(products)} instances to {filename}. "
+            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
 
 
 if __name__ == "__main__":
