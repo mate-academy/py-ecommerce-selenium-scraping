@@ -7,3 +7,6 @@ venv/
 .pytest_cache/
 **__pycache__/
 **.csv
+pyproject.toml
+.csv
+.log
