@@ -14,7 +14,7 @@ from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from tqdm import tqdm
 
 
@@ -68,14 +68,14 @@ class Product:
 CSV_FIELDS = [field.name for field in fields(Product)]
 
 
-def accept_cookies(page_url):
-    new_driver = WebDriverSingleton.get_instance()
-    new_driver.get(page_url)
+def accept_cookies(page_url: str) -> None:
+    driver = WebDriverSingleton.get_instance()
+    driver.get(page_url)
 
     try:
-        wait = WebDriverWait(new_driver, 10)
+        wait = WebDriverWait(driver, 10)
         accept_button = wait.until(
-            EC.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
+            ec.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
         )
         accept_button.click()
     except (NoSuchElementException, TimeoutException):
@@ -85,14 +85,14 @@ def accept_cookies(page_url):
         )
 
 
-def press_more_button(page_url) -> str:
-    new_driver = WebDriverSingleton.get_instance()
-    new_driver.get(page_url)
+def press_more_button(page_url: str) -> str:
+    driver = WebDriverSingleton.get_instance()
+    driver.get(page_url)
 
     try:
-        wait = WebDriverWait(new_driver, 10)
+        wait = WebDriverWait(driver, 10)
         more_button = wait.until(
-            EC.element_to_be_clickable(
+            ec.element_to_be_clickable(
                 (By.CLASS_NAME, "ecomerce-items-scroll-more")
             )
         )
@@ -101,7 +101,7 @@ def press_more_button(page_url) -> str:
             more_button.click()
             time.sleep(5)
             more_button = wait.until(
-                EC.element_to_be_clickable(
+                ec.element_to_be_clickable(
                     (By.CLASS_NAME, "ecomerce-items-scroll-more")
                 )
             )
@@ -111,29 +111,68 @@ def press_more_button(page_url) -> str:
             f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
-    page = new_driver.page_source
+    page = driver.page_source
     return page
 
 
-def parse_single_product(product_soup: BeautifulSoup) -> Product:
-    return Product(
-        title=product_soup.select_one(".title").text,
-        description=product_soup.select_one(".description").text,
-        price=float(product_soup.select_one(".price").text.replace("$", "")),
-        rating=len(product_soup.select(".ws-icon-star")),
-        num_of_reviews=int(
-            product_soup.select_one(".review-count").text.split(" ")[0]
-        ),
+def get_title_from_detail_page(href: str) -> str:
+    driver = WebDriverSingleton.get_instance()
+    driver.get(urljoin(BASE_URL, href))
+
+    return str(driver.find_element(By.CLASS_NAME, "title").text)
+
+
+def get_description_from_detail_page(href: str) -> str:
+    driver = WebDriverSingleton.get_instance()
+    driver.get(urljoin(BASE_URL, href))
+
+    return str(driver.find_element(By.CLASS_NAME, "description").text)
+
+
+def get_price_from_detail_page(href: str) -> float:
+    driver = WebDriverSingleton.get_instance()
+    driver.get(urljoin(BASE_URL, href))
+
+    return float(
+        driver.find_element(By.CLASS_NAME, "price").text.replace("$", "")
     )
+
+
+def get_rating_from_list_page(product_card: BeautifulSoup) -> int:
+    """Separate logic used here as rating differs on list and product pages."""
+    return len(product_card.select(".ws-icon-star"))
+
+
+def get_num_of_reviews_from_list_page(product_card: BeautifulSoup) -> int:
+    """Separate logic used here as number of
+    reviews differs on list and product pages."""
+    return int(product_card.select_one(".review-count").text.split(" ")[0])
+
+
+def collect_info_on_product(info: list) -> Product:
+    pass
 
 
 def get_products_on_page(page_soup: BeautifulSoup) -> [Product]:
-    products = page_soup.select(".card-body")
-    logging.info(
-        f"Found {len(products)} items. "
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    )
-    return [parse_single_product(product) for product in products]
+
+    product_cards = page_soup.select(".card-body")
+
+    return [
+        Product(
+            title=get_title_from_detail_page(
+                product_card.select_one(".title")["href"]
+            ),
+            description=get_description_from_detail_page(
+                product_card.select_one(".title")["href"]
+            ),
+            price=get_price_from_detail_page(
+                product_card.select_one(".title")["href"]
+            ),
+            rating=get_rating_from_list_page(product_card),
+            num_of_reviews=get_num_of_reviews_from_list_page(product_card),
+        )
+        for product_card in product_cards
+    ]
 
 
 def get_all_products() -> None:
@@ -172,6 +211,6 @@ def csv_output(products: [Product], csv_name: str) -> None:
 
 
 if __name__ == "__main__":
-    driver = WebDriverSingleton.get_instance()
-    with driver as session:
+    chrome_driver = WebDriverSingleton.get_instance()
+    with chrome_driver as session:
         get_all_products()
