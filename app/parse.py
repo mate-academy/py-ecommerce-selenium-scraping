@@ -1,6 +1,8 @@
 import csv
 import time
+import types
 from dataclasses import dataclass
+from typing import Optional, Type
 from urllib.parse import urljoin
 
 from selenium import webdriver
@@ -22,16 +24,25 @@ class Product:
     num_of_reviews: int
 
 
-_driver = None
+PRODUCT_FIELDS = [
+    "title", "description", "price", "rating", "num_of_reviews"
+]
 
 
-def get_driver() -> webdriver:
-    return _driver
+class WebDriver:
+    def __init__(self, driver: webdriver) -> None:
+        self.driver = driver
 
+    def __enter__(self) -> webdriver:
+        return self.driver
 
-def set_driver(new_driver: webdriver) -> None:
-    global _driver
-    _driver = new_driver
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[types.TracebackType]
+    ) -> None:
+        self.driver.quit()
 
 
 def set_product(driver: webdriver) -> Product:
@@ -110,17 +121,11 @@ def get_link_page(driver: webdriver) -> {str: str}:
     return all_link
 
 
-def scrape_all_links() -> None:
-    driver = get_driver()
+def scrape_all_links(driver: webdriver) -> None:
     driver.get(HOME_URL)
     for name, link in get_link_page(driver).items():
         page_product = scrape_page_product(driver, link)
         write_to_csv(name, page_product)
-
-
-PRODUCT_FIELDS = [
-    "title", "description", "price", "rating", "num_of_reviews"
-]
 
 
 def write_to_csv(
@@ -141,9 +146,8 @@ def write_to_csv(
 
 
 def get_all_products() -> None:
-    with webdriver.Chrome() as new_driver:
-        set_driver(new_driver)
-        scrape_all_links()
+    with WebDriver(webdriver.Chrome()) as driver:
+        scrape_all_links(driver)
 
 
 if __name__ == "__main__":
