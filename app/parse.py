@@ -84,9 +84,6 @@ def scrape_page_product(driver: webdriver, link: str) -> [Product]:
         By.CSS_SELECTOR, "div.col-md-4.col-xl-4.col-lg-4"
     )
     all_products = [set_product(card) for card in cards]
-    # for card in cards:
-    #     product = set_product(card)
-    #     print(product)
     return all_products
 
 
