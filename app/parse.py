@@ -85,17 +85,17 @@ class ScrapTestSite:
             self.check_cookies()
             self.click_more_button()
             page_source = self.driver.page_source
-            products = PageParser(page_source)
+            parser = PageParser(page_source)
             print("Collecting data...")
-            products.get_products_content()
+            products = parser.get_products_content()
             print(f"Write data to {page_name}.csv")
-            products.write_to_csv(f"{page_name}.csv")
+            CSVWriter.write_to_csv(products, f"{page_name}.csv")
 
         self.close_browser()
 
 
 class PageParser:
-    """Class to pars single page and write data to csv file"""
+    """Class to parse page content and extract product information"""
     def __init__(self, page: str) -> None:
         self.page_source = page
 
@@ -127,8 +127,11 @@ class PageParser:
 
         return products_list
 
-    def write_to_csv(self, file_name: str) -> None:
-        products = self.get_products_content()
+
+class CSVWriter:
+    """Class to write product data to a CSV file"""
+    @staticmethod
+    def write_to_csv(products: list[Product], file_name: str) -> None:
         with open(
                 file_name,
                 "w",
