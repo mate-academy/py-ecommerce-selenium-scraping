@@ -1,22 +1,31 @@
-from dataclasses import dataclass
-from urllib.parse import urljoin
+import time
+from selenium import webdriver
 
-
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-
-
-@dataclass
-class Product:
-    title: str
-    description: str
-    price: float
-    rating: int
-    num_of_reviews: int
+from .product import ProductParser, PRODUCT_FIELDS, Product
+from .file_manager import CSVFileManager
+from .settings import webscraper_page_urls
+from .web_driver import WebDriverSingleton
 
 
 def get_all_products() -> None:
-    pass
+    start = time.perf_counter()
+    with webdriver.Chrome() as driver:
+
+        driver.maximize_window()
+        WebDriverSingleton(driver)
+
+        for file_name, url in webscraper_page_urls.items():
+            products: list[Product] = ProductParser(
+                page_url=url
+            ).get_all_products()
+
+            file_manager = CSVFileManager(
+                file_name=file_name, column_fields=PRODUCT_FIELDS
+            )
+            file_manager.write_in_csv_file(data=products)
+
+    end = time.perf_counter()
+    print(end - start)
 
 
 if __name__ == "__main__":
