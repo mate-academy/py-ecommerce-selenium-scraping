@@ -1,22 +1,21 @@
-from dataclasses import dataclass
-from urllib.parse import urljoin
+from tqdm import tqdm
 
+from app.parse_class import ParseClass
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-
-
-@dataclass
-class Product:
-    title: str
-    description: str
-    price: float
-    rating: int
-    num_of_reviews: int
+pages = [
+    "",
+    "computers",
+    "phones",
+    "phones/touch",
+    "computers/tablets",
+    "computers/laptops"
+]
 
 
 def get_all_products() -> None:
-    pass
+    for page in tqdm(pages):
+        device = ParseClass(page)
+        device.parse_processing()
 
 
 if __name__ == "__main__":
