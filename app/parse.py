@@ -117,9 +117,12 @@ def get_products_with_pagination(url: str) -> list[Product]:
         driver.get(url)
         while True:
             page_soup = BeautifulSoup(driver.page_source, "html.parser")
-            new_products = get_single_page_products(page_soup, is_paginated=True)
+            new_products = get_single_page_products(
+                page_soup, is_paginated=True
+            )
             all_products.extend(
-                product for product in new_products if product not in all_products
+                product for product in new_products
+                if product not in all_products
             )
 
             try:
@@ -153,7 +156,7 @@ def write_products_to_csv(
     file_exists = os.path.exists(product_path)
     file_is_empty = os.stat(product_path).st_size == 0 if file_exists else True
 
-    with open(product_path, "a", newline='') as file:
+    with open(product_path, "a") as file:
         writer = csv.writer(file)
         if not file_exists or file_is_empty:
             writer.writerow(PRODUCT_FIELDS)
