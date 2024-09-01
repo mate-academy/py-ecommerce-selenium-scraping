@@ -1,11 +1,11 @@
 import csv
+import os
 import time
 from dataclasses import (
     dataclass,
     fields,
     astuple
 )
-from typing import List
 from urllib.parse import urljoin
 
 import requests
@@ -93,7 +93,7 @@ def parse_single_product(
 
 def get_single_page_products(
         page_soup: BeautifulSoup, is_paginated: bool = False
-) -> List[Product]:
+) -> list[Product]:
 
     products = page_soup.select(".product-wrapper")
     return [
@@ -101,7 +101,7 @@ def get_single_page_products(
     ]
 
 
-def get_products(url: str) -> List[Product]:
+def get_products(url: str) -> list[Product]:
     response = requests.get(url)
     response.raise_for_status()
 
@@ -109,50 +109,54 @@ def get_products(url: str) -> List[Product]:
     return get_single_page_products(page_soup, False)
 
 
-def get_products_with_pagination(
-        driver: webdriver.Chrome, url: str
-) -> List[Product]:
-
-    driver.get(url)
+def get_products_with_pagination(url: str) -> list[Product]:
+    driver = webdriver.Chrome()
     all_products = []
 
-    while True:
-        page_soup = BeautifulSoup(driver.page_source, "html.parser")
-        new_products = get_single_page_products(page_soup, is_paginated=True)
-        all_products.extend(
-            product for product in new_products if product not in all_products
-        )
-
-        try:
-            more_button = driver.find_element(
-                By.CLASS_NAME, "ecomerce-items-scroll-more"
+    try:
+        driver.get(url)
+        while True:
+            page_soup = BeautifulSoup(driver.page_source, "html.parser")
+            new_products = get_single_page_products(page_soup, is_paginated=True)
+            all_products.extend(
+                product for product in new_products if product not in all_products
             )
-            if not more_button.is_displayed():
-                break
-            driver.execute_script(
-                "arguments[0].scrollIntoView(true);", more_button
-            )
-            time.sleep(1)
 
             try:
-                more_button.click()
-                time.sleep(2)
-            except ElementClickInterceptedException:
-                break
+                more_button = driver.find_element(
+                    By.CLASS_NAME, "ecomerce-items-scroll-more"
+                )
+                if not more_button.is_displayed():
+                    break
+                driver.execute_script(
+                    "arguments[0].scrollIntoView(true);", more_button
+                )
+                time.sleep(1)
 
-        except NoSuchElementException:
-            break
+                try:
+                    more_button.click()
+                    time.sleep(2)
+                except ElementClickInterceptedException:
+                    break
+
+            except NoSuchElementException:
+                break
+    finally:
+        driver.quit()
 
     return all_products
 
 
 def write_products_to_csv(
-        products: List[Product], product_path: str
+        products: list[Product], product_path: str
 ) -> None:
+    file_exists = os.path.exists(product_path)
+    file_is_empty = os.stat(product_path).st_size == 0 if file_exists else True
 
-    with open(product_path, "w") as file:
+    with open(product_path, "a", newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(PRODUCT_FIELDS)
+        if not file_exists or file_is_empty:
+            writer.writerow(PRODUCT_FIELDS)
         writer.writerows([astuple(product) for product in products])
 
 
@@ -161,19 +165,15 @@ def get_all_products() -> None:
     write_products_to_csv(get_products(COMPUTERS_URL), COMPUTERS_CSV_PATH)
     write_products_to_csv(get_products(PHONES_URL), PHONES_CSV_PATH)
 
-    driver = webdriver.Chrome()
-    try:
-        write_products_to_csv(
-            get_products_with_pagination(driver, LAPTOPS_URL), LAPTOPS_CSV_PATH
-        )
-        write_products_to_csv(
-            get_products_with_pagination(driver, TABLETS_URL), TABLETS_CSV_PATH
-        )
-        write_products_to_csv(
-            get_products_with_pagination(driver, TOUCH_URL), TOUCH_CSV_PATH
-        )
-    finally:
-        driver.close()
+    write_products_to_csv(
+        get_products_with_pagination(LAPTOPS_URL), LAPTOPS_CSV_PATH
+    )
+    write_products_to_csv(
+        get_products_with_pagination(TABLETS_URL), TABLETS_CSV_PATH
+    )
+    write_products_to_csv(
+        get_products_with_pagination(TOUCH_URL), TOUCH_CSV_PATH
+    )
 
 
 if __name__ == "__main__":
