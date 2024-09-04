@@ -101,53 +101,53 @@ def get_single_page_products(
     ]
 
 
-def get_products(url: str) -> list[Product]:
-    response = requests.get(url)
-    response.raise_for_status()
+def get_products(url: str, paginated: bool = False) -> list[Product]:
+    if paginated:
+        driver = webdriver.Chrome()
+        all_products = []
 
-    page_soup = BeautifulSoup(response.text, "html.parser")
-    return get_single_page_products(page_soup, False)
-
-
-def get_products_with_pagination(url: str) -> list[Product]:
-    driver = webdriver.Chrome()
-    all_products = []
-
-    try:
-        driver.get(url)
-        while True:
-            page_soup = BeautifulSoup(driver.page_source, "html.parser")
-            new_products = get_single_page_products(
-                page_soup, is_paginated=True
-            )
-            all_products.extend(
-                product for product in new_products
-                if product not in all_products
-            )
-
-            try:
-                more_button = driver.find_element(
-                    By.CLASS_NAME, "ecomerce-items-scroll-more"
+        try:
+            driver.get(url)
+            while True:
+                page_soup = BeautifulSoup(driver.page_source, "html.parser")
+                new_products = get_single_page_products(
+                    page_soup, is_paginated=True
                 )
-                if not more_button.is_displayed():
-                    break
-                driver.execute_script(
-                    "arguments[0].scrollIntoView(true);", more_button
+                all_products.extend(
+                    product for product in new_products
+                    if product not in all_products
                 )
-                time.sleep(1)
 
                 try:
-                    more_button.click()
-                    time.sleep(2)
-                except ElementClickInterceptedException:
+                    more_button = driver.find_element(
+                        By.CLASS_NAME, "ecomerce-items-scroll-more"
+                    )
+                    if not more_button.is_displayed():
+                        break
+                    driver.execute_script(
+                        "arguments[0].scrollIntoView(true);", more_button
+                    )
+                    time.sleep(1)
+
+                    try:
+                        more_button.click()
+                        time.sleep(2)
+                    except ElementClickInterceptedException:
+                        break
+
+                except NoSuchElementException:
                     break
+        finally:
+            driver.quit()
 
-            except NoSuchElementException:
-                break
-    finally:
-        driver.quit()
+        return all_products
 
-    return all_products
+    else:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        page_soup = BeautifulSoup(response.text, "html.parser")
+        return get_single_page_products(page_soup, is_paginated=False)
 
 
 def write_products_to_csv(
@@ -169,13 +169,13 @@ def get_all_products() -> None:
     write_products_to_csv(get_products(PHONES_URL), PHONES_CSV_PATH)
 
     write_products_to_csv(
-        get_products_with_pagination(LAPTOPS_URL), LAPTOPS_CSV_PATH
+        get_products(LAPTOPS_URL, True), LAPTOPS_CSV_PATH
     )
     write_products_to_csv(
-        get_products_with_pagination(TABLETS_URL), TABLETS_CSV_PATH
+        get_products(TABLETS_URL, True), TABLETS_CSV_PATH
     )
     write_products_to_csv(
-        get_products_with_pagination(TOUCH_URL), TOUCH_CSV_PATH
+        get_products(TOUCH_URL, True), TOUCH_CSV_PATH
     )
 
 
