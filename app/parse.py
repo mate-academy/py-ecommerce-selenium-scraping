@@ -33,7 +33,7 @@ class Product:
     num_of_reviews: int
 
 
-def set_driver() -> Options:
+def get_driver_options() -> Options:
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--log-level=3")
@@ -89,7 +89,7 @@ def parse_product_page(driver: WebDriver, url: str, category: str) -> [Product]:
     try:
         cookie_banner = driver.find_element(By.ID, "cookieBanner")
         accept_cookies(cookie_banner)
-    except:
+    except NoSuchElementException:
         pass
 
     while True:
@@ -122,7 +122,7 @@ def parse_product_page(driver: WebDriver, url: str, category: str) -> [Product]:
 
 
 def get_all_products() -> None:
-    driver_options = set_driver()
+    driver_options = get_driver_options()
 
     tqdm_obj = tqdm(
         ALL_PAGE.items(),
