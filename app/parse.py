@@ -56,6 +56,13 @@ def parse_additional_info(product_soup: BeautifulSoup) -> tuple[dict]:
     driver = webdriver.Chrome()
     driver.get(detail_url)
 
+    cookies = driver.find_elements(By.CLASS_NAME, "acceptContainer")
+
+    if cookies:
+        button = cookies[0].find_element(By.TAG_NAME, "button")
+        button.click()
+        print("click")
+
     colors_product = parse_colors(driver)
 
     hdd_prices = parse_hdd_prices(driver)
