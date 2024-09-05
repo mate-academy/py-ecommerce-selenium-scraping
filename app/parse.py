@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from time import sleep
 from urllib.parse import urljoin
 
 import requests
@@ -8,14 +9,21 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/")
-LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops/")
-TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets/")
-PHONES_URL = "https://webscraper.io/test-sites/e-commerce/more/phones"
+HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more")
+COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
+LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops")
+TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets")
+PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
 TORCHES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
+HOME_PAGE_PRODUCTS_CSV_PATH = "home.csv"
+COMPUTERS_PAGE_PRODUCTS_CSV_PATH = "computers.csv"
+LAPTOPS_PAGE_PRODUCTS_CSV_PATH = "laptops.csv"
+TABLETS_PAGE_PRODUCTS_CSV_PATH = "tablets.csv"
+PHONES_PAGE_PRODUCTS_CSV_PATH = "phones.csv"
+TOUCH_PAGE_PRODUCTS_CSV_PATH = "touch.csv"
 
 OPTIONS_CHROME = webdriver.ChromeOptions()
 OPTIONS_CHROME.add_argument("--window-size=1920,1080")
@@ -101,20 +109,22 @@ def parse_single_products(soup: BeautifulSoup) -> Product:
 
 def get_single_page_products(page_soup: BeautifulSoup) -> list[Product]:
     products = page_soup.select(".product-wrapper")
-    return [parse_single_products(product) for product in products]
+    return [
+        parse_single_products(product)
+        for product in tqdm(products, desc="Parser products")
+    ]
 
 
 def click_all_button_more(driver: webdriver.Chrome) -> None:
     button = driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")
     if button:
         button = button[0]
-        while button.get_attribute("style"):
-            print(button.get_attribute("style"))
+        while not button.get_attribute("style"):
             button.click()
+            sleep(0.1)
 
 
 def get_all_products(url) -> None:
-
     with webdriver.Chrome(options=OPTIONS_CHROME) as driver:
         driver.get(url)
         click_accept_cookies(driver)
@@ -127,5 +137,9 @@ def get_all_products(url) -> None:
         print(i)
 
 
-if __name__ == "__main__":
+def main():
     get_all_products(TORCHES_URL)
+
+
+if __name__ == "__main__":
+    main()
