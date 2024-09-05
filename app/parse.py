@@ -1,29 +1,38 @@
-from dataclasses import dataclass
+import csv
+from dataclasses import dataclass, fields
 from time import sleep
 from urllib.parse import urljoin
 
-import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more")
-COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
-LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops")
-TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets")
-PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
-TORCHES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
-HOME_PAGE_PRODUCTS_CSV_PATH = "home.csv"
-COMPUTERS_PAGE_PRODUCTS_CSV_PATH = "computers.csv"
-LAPTOPS_PAGE_PRODUCTS_CSV_PATH = "laptops.csv"
-TABLETS_PAGE_PRODUCTS_CSV_PATH = "tablets.csv"
-PHONES_PAGE_PRODUCTS_CSV_PATH = "phones.csv"
-TOUCH_PAGE_PRODUCTS_CSV_PATH = "touch.csv"
+
+URLS = {
+    "home": urljoin(BASE_URL, "test-sites/e-commerce/more"),
+    "computers": urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
+    "laptops": urljoin(
+        BASE_URL, "test-sites/e-commerce/more/computers/laptops"
+    ),
+    "tablets": urljoin(
+        BASE_URL, "test-sites/e-commerce/more/computers/tablets"
+    ),
+    "phones": urljoin(BASE_URL, "test-sites/e-commerce/more/phones"),
+    "touch": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+}
+
+CSV_PATHS = {
+    "home_page_products": "home.csv",
+    "computers_page_products": "computers.csv",
+    "laptops_page_products": "laptops.csv",
+    "tablets_page_products": "tablets.csv",
+    "phones_page_products": "phones.csv",
+    "touch_page_products": "touch.csv",
+}
 
 OPTIONS_CHROME = webdriver.ChromeOptions()
 OPTIONS_CHROME.add_argument("--window-size=1920,1080")
@@ -37,31 +46,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
-    additional_info: {}
-
-
-def parse_colors(driver) -> list:
-    colors_product = []
-    color_check = driver.find_elements(By.CSS_SELECTOR, "select[aria-label='color']")
-    if color_check:
-        colors = Select(color_check[0]).options
-        for color in colors[1:]:
-            colors_product.append(color.text)
-    return colors_product
-
-
-def parse_hdd_prices(driver) -> dict:
-    hdd_prices = {}
-    swatches = driver.find_elements(By.CLASS_NAME, "swatches")
-    if swatches:
-        buttons = swatches[0].find_elements(By.TAG_NAME, "button")
-        for button in buttons:
-            button.click()
-            price = float(
-                driver.find_element(By.CLASS_NAME, "price").text.replace("$", "")
-            )
-            hdd_prices[button.get_property("value")] = price
-    return hdd_prices
 
 
 def click_accept_cookies(driver: webdriver.Chrome) -> None:
@@ -69,41 +53,19 @@ def click_accept_cookies(driver: webdriver.Chrome) -> None:
 
     if cookies:
         button = cookies[0].find_element(By.TAG_NAME, "button")
-        WebDriverWait(driver, 1).until(EC.element_to_be_clickable(button))
+        WebDriverWait(driver, 1).until(ec.element_to_be_clickable(button))
         button.click()
 
 
-def parse_additional_info(product_soup: BeautifulSoup) -> tuple[dict]:
-    detail_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
-    driver = webdriver.Chrome(options=OPTIONS_CHROME)
-    driver.get(detail_url)
-
-    click_accept_cookies(driver)
-
-    colors_product = parse_colors(driver)
-    hdd_prices = parse_hdd_prices(driver)
-
-    driver.close()
-
-    return hdd_prices, colors_product
-
-
 def parse_single_products(soup: BeautifulSoup) -> Product:
-    info = parse_additional_info(soup)
-
-    additional_info = {}
-    if info[0]:
-        additional_info.update({"hdd_prices": info[0]})
-    if info[1]:
-        additional_info.update({"colors": info[1]})
-
     return Product(
         title=soup.select_one(".title").text,
         description=soup.select_one(".description").text,
         price=float(soup.select_one(".price").text.replace("$", "")),
         rating=len(soup.select(".ws-icon-star")),
-        num_of_reviews=int(soup.select_one(".review-count").text.split(" ")[0]),
-        additional_info=additional_info,
+        num_of_reviews=int(
+            soup.select_one(".review-count").text.split(" ")[0]
+        ),
     )
 
 
@@ -124,22 +86,43 @@ def click_all_button_more(driver: webdriver.Chrome) -> None:
             sleep(0.1)
 
 
-def get_all_products(url) -> None:
-    with webdriver.Chrome(options=OPTIONS_CHROME) as driver:
-        driver.get(url)
-        click_accept_cookies(driver)
-        click_all_button_more(driver)
-        html = driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-        parse = get_single_page_products(soup)
+def get_all_products() -> dict[str, list[Product]]:
+    all_products = {}
+    for key, url in URLS.items():
+        with webdriver.Chrome(options=OPTIONS_CHROME) as driver:
+            driver.get(url)
+            click_accept_cookies(driver)
+            click_all_button_more(driver)
+            html = driver.page_source
+            soup = BeautifulSoup(html, "html.parser")
+            products = get_single_page_products(soup)
+            all_products[key] = products
 
-    for i in parse:
-        print(i)
+            csv_path = CSV_PATHS.get(f"{key}_page_products")
+            write_products_to_csv(products, csv_path)
+
+    return all_products
 
 
-def main():
-    get_all_products(TORCHES_URL)
+PRODUCT_FIELDS = [field.name for field in fields(Product)]
+
+
+def write_products_to_csv(products: [Product], file_name: str) -> None:
+    with open(file_name, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(PRODUCT_FIELDS)
+        for product in products:
+            writer.writerow([
+                product.title,
+                product.description,
+                product.price,
+                product.rating,
+                product.num_of_reviews,
+            ])
 
 
 if __name__ == "__main__":
-    main()
+    all_products = get_all_products()
+    # for key, products in all_products.items():
+    #     csv_path = CSV_PATHS.get(f"{key}_page_products")
+    #     write_products_to_csv(products, csv_path)
