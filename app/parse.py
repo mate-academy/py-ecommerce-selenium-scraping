@@ -9,13 +9,17 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-BASE_URL = "https://webscraper.io/"
+BASE_URL = "https://webscraper.io"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/")
 LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops/")
 TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets/")
-PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/")
-TORCHES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch/")
+PHONES_URL = "https://webscraper.io/test-sites/e-commerce/more/phones"
+TORCHES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
+
+OPTIONS_CHROME = webdriver.ChromeOptions()
+OPTIONS_CHROME.add_argument("--window-size=1920,1080")
+OPTIONS_CHROME.add_argument("--headless")
 
 
 @dataclass
@@ -63,7 +67,7 @@ def click_accept_cookies(driver: webdriver.Chrome) -> None:
 
 def parse_additional_info(product_soup: BeautifulSoup) -> tuple[dict]:
     detail_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(options=OPTIONS_CHROME)
     driver.get(detail_url)
 
     click_accept_cookies(driver)
@@ -101,13 +105,17 @@ def get_single_page_products(page_soup: BeautifulSoup) -> list[Product]:
 
 
 def click_all_button_more(driver: webdriver.Chrome) -> None:
-    button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
-    while not button.get_attribute("style"):
-        button.click()
+    button = driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")
+    if button:
+        button = button[0]
+        while button.get_attribute("style"):
+            print(button.get_attribute("style"))
+            button.click()
 
 
 def get_all_products(url) -> None:
-    with webdriver.Chrome() as driver:
+
+    with webdriver.Chrome(options=OPTIONS_CHROME) as driver:
         driver.get(url)
         click_accept_cookies(driver)
         click_all_button_more(driver)
@@ -120,6 +128,4 @@ def get_all_products(url) -> None:
 
 
 if __name__ == "__main__":
-    get_all_products(
-        "https://webscraper.io/test-sites/e-commerce/more/computers/laptops"
-    )
+    get_all_products(TORCHES_URL)
