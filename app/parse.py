@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
-
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -51,20 +52,23 @@ def parse_hdd_prices(driver) -> dict:
     return hdd_prices
 
 
+def click_accept_cookies(driver: webdriver.Chrome) -> None:
+    cookies = driver.find_elements(By.CLASS_NAME, "acceptContainer")
+
+    if cookies:
+        button = cookies[0].find_element(By.TAG_NAME, "button")
+        WebDriverWait(driver, 1).until(EC.element_to_be_clickable(button))
+        button.click()
+
+
 def parse_additional_info(product_soup: BeautifulSoup) -> tuple[dict]:
     detail_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
     driver = webdriver.Chrome()
     driver.get(detail_url)
 
-    cookies = driver.find_elements(By.CLASS_NAME, "acceptContainer")
-
-    if cookies:
-        button = cookies[0].find_element(By.TAG_NAME, "button")
-        button.click()
-        print("click")
+    click_accept_cookies(driver)
 
     colors_product = parse_colors(driver)
-
     hdd_prices = parse_hdd_prices(driver)
 
     driver.close()
@@ -73,10 +77,13 @@ def parse_additional_info(product_soup: BeautifulSoup) -> tuple[dict]:
 
 
 def parse_single_products(soup: BeautifulSoup) -> Product:
-    hdd_and_prices = parse_additional_info(soup)
-    additional_info = {"hdd_prices": hdd_and_prices[0]}
-    if hdd_and_prices[1]:
-        additional_info.update({"colors": hdd_and_prices[1]})
+    info = parse_additional_info(soup)
+
+    additional_info = {}
+    if info[0]:
+        additional_info.update({"hdd_prices": info[0]})
+    if info[1]:
+        additional_info.update({"colors": info[1]})
 
     return Product(
         title=soup.select_one(".title").text,
@@ -93,14 +100,26 @@ def get_single_page_products(page_soup: BeautifulSoup) -> list[Product]:
     return [parse_single_products(product) for product in products]
 
 
-def get_all_products(url) -> None:
-    page = requests.get(url).content
-    soup = BeautifulSoup(page, "html.parser")
-    first_page_parse = get_single_page_products(soup)
+def click_all_button_more(driver: webdriver.Chrome) -> None:
+    button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
+    while not button.get_attribute("style"):
+        button.click()
 
-    for i in first_page_parse:
+
+def get_all_products(url) -> None:
+    with webdriver.Chrome() as driver:
+        driver.get(url)
+        click_accept_cookies(driver)
+        click_all_button_more(driver)
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        parse = get_single_page_products(soup)
+
+    for i in parse:
         print(i)
 
 
 if __name__ == "__main__":
-    get_all_products(HOME_URL)
+    get_all_products(
+        "https://webscraper.io/test-sites/e-commerce/more/computers/laptops"
+    )
