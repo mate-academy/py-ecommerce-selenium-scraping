@@ -123,6 +123,3 @@ def write_products_to_csv(products: [Product], file_name: str) -> None:
 
 if __name__ == "__main__":
     all_products = get_all_products()
-    # for key, products in all_products.items():
-    #     csv_path = CSV_PATHS.get(f"{key}_page_products")
-    #     write_products_to_csv(products, csv_path)
