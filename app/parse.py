@@ -42,27 +42,24 @@ def close_driver() -> None:
 
 def get_list_of_elements(html_page: BeautifulSoup) -> list[Product]:
     all_elements = html_page.select(".card.thumbnail")
-    list_of_product = []
-    for element in all_elements:
-        list_of_product.append(
-            Product(
-                title=element.select_one(".title")["title"],
-                description=element.select_one(
-                    ".description"
-                ).text.replace("\xa0", " "),
-                price=float(element.select_one(
-                    ".price"
-                ).text.replace("$", "")),
-                rating=len(element.select_one(
-                    ".ratings"
-                ).select(".ws-icon.ws-icon-star")),
-                num_of_reviews=int(element.select_one(
-                    ".ratings"
-                ).select_one(".review-count").text.split()[0])
-            )
+    return [
+        Product(
+            title=element.select_one(".title")["title"],
+            description=element.select_one(
+                ".description"
+            ).text.replace("\xa0", " "),
+            price=float(element.select_one(
+                ".price"
+            ).text.replace("$", "")),
+            rating=len(element.select_one(
+                ".ratings"
+            ).select(".ws-icon.ws-icon-star")),
+            num_of_reviews=int(element.select_one(
+                ".ratings"
+            ).select_one(".review-count").text.split()[0])
         )
-
-    return list_of_product
+        for element in all_elements
+    ]
 
 
 def page_final_page(url_page: str) -> BeautifulSoup:
