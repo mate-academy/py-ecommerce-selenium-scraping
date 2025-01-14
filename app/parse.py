@@ -1,5 +1,6 @@
 import time
 import csv
+from typing import List
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -76,7 +77,7 @@ def scroll_page(driver: WebDriver) -> None:
             break
 
 
-def get_products(url: str, with_scroll: bool = False) -> [Product]:
+def get_products(url: str, with_scroll: bool = False) -> List[Product]:
     try:
         with webdriver.Chrome() as driver:
             driver.get(url)
@@ -87,11 +88,13 @@ def get_products(url: str, with_scroll: bool = False) -> [Product]:
                 for product in driver.find_elements(By.CLASS_NAME, "card-body")
             ]
         return products
-    except Exception as e:
-        raise RuntimeError(f"Помилка при отриманні продуктів із {url}: {e}")
+    except NoSuchElementException as e:
+        raise RuntimeError(f"Елемент не знайдено на сторінці {url}: {e}")
+    except WebDriverException as e:
+        raise RuntimeError(f"Помилка WebDriver при отриманні продуктів із {url}: {e}")
 
 
-def save_to_file(filename: str, products: [Product]) -> None:
+def save_to_file(filename: str, products: List[Product]) -> None:
     with open(filename, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow([COLUMN_NAMES[field] for field in PRODUCT_FIELDS])
