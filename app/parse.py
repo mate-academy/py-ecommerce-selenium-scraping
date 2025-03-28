@@ -71,7 +71,7 @@ def click_more_button(driver: WebElement) -> None:
     more = get_element_or_false(
         elem=driver, by=By.CLASS_NAME, value="ecomerce-items-scroll-more"
     )
-    while more and not more.is_displayed():
+    while more and more.is_displayed():
         more.click()
         sleep(0.1)
 
@@ -142,7 +142,7 @@ def parse_product(product: Tag, driver: WebElement) -> Product:
         "description": product.select_one(".description").text,
         "price": float(product.select_one(".price").text.replace("$", "")),
         "rating": product.select_one(".review-count").text.split()[0],
-        "num_of_reviews": product.select_one(".review-count").text.split()[0],
+        "num_of_reviews": len(product.select(".ws-icon-star")),
         "additional_info": get_additional_info(product, driver)
     }
     return Product(**data)
