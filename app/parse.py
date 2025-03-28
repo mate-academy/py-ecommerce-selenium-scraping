@@ -24,9 +24,6 @@ TABLETS_URL = (
 TOUCH_URL = "https://webscraper.io/test-sites/e-commerce/more/phones/touch"
 
 
-_driver: WebDriver = None
-
-
 def get_driver() -> WebDriver:
     return _driver
 
@@ -63,12 +60,15 @@ def get_all_products() -> None:
         products = []
         if url in {LAPTOPS_URL, TABLETS_URL, TOUCH_URL}:
             while True:
-                products.extend(scrape_products_from_page())
-                more_button = _driver.find_element(
-                    By.CLASS_NAME, "ecomerce-items-scroll-more"
-                )
-                more_button.click()
-                time.sleep(6)
+                try:
+                    products.extend(scrape_products_from_page())
+                    more_button = _driver.find_element(
+                        By.CLASS_NAME, "ecomerce-items-scroll-more"
+                    )
+                    more_button.click()
+                    time.sleep(6)
+                except:
+                    break
 
         else:
             products.extend(scrape_products_from_page())
