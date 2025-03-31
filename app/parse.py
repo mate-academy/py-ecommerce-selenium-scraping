@@ -85,7 +85,6 @@ def click_more_until_disappear(driver, max_retries=3):
             driver.execute_script("arguments[0].scrollIntoView(true);", more_link)
             driver.execute_script("arguments[0].click();", more_link)
             print("Clicking on the 'More' link is done.")
-            attempts = 0
             time.sleep(1)
 
             status = WebDriverWait(driver, 1).until(
