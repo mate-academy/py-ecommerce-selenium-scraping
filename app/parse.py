@@ -21,7 +21,7 @@ class Product:
     num_of_reviews: int
 
 
-def accept_cookies(driver: WebElement) -> None:
+def accept_cookies(driver: webdriver.Chrome) -> None:
     try:
         wait = WebDriverWait(driver, 10)
         btn = wait.until(
@@ -32,7 +32,7 @@ def accept_cookies(driver: WebElement) -> None:
         return
 
 
-def scroll_page(driver: WebElement) -> None:
+def scroll_page(driver: webdriver.Chrome) -> None:
     while True:
         try:
             btn = driver.find_element(
@@ -47,7 +47,7 @@ def scroll_page(driver: WebElement) -> None:
             break
 
 
-def has_scroll_button(driver: WebElement) -> None:
+def has_scroll_button(driver: webdriver.Chrome) -> None:
     try:
         scroll_page(driver)
         time.sleep(1)
@@ -60,7 +60,9 @@ def write_to_csv(file_name: str, products: List[Product]) -> None:
     with open(file_name, "w", encoding="utf-8", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(fields)
-        writer.writerows([asdict(product).values() for product in products])
+        for product in products:
+            row = [asdict(product)[field] for field in fields]
+            writer.writerow(row)
 
 
 BASE_URL = "https://webscraper.io/"
