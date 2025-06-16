@@ -163,7 +163,7 @@ def get_category_pages(driver: WebDriver) -> None:
 
 
 def get_and_save_random_products_on_page(
-    drive: WebDriver, url: str, file_name: str
+    driver: WebDriver, url: str, file_name: str
 ) -> None:
     logging.info(f"Start parsing page with random products: {url}")
     text = requests.get(url).content
