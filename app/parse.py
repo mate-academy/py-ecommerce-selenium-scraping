@@ -120,7 +120,6 @@ def process_page(
 
 
 def get_all_products() -> None:
-    pass
     urls = [
         (HOME_URL, "home.csv", False),
         (urljoin(HOME_URL, "computers"), "computers.csv", False),
