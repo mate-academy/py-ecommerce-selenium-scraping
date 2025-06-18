@@ -82,7 +82,7 @@ def parse_single_product(product: Tag) -> Product:
 def get_products(url: str) -> list[Product]:
     text = requests.get(url).content
     soup = BeautifulSoup(text, "html.parser")
-    products = soup.select(".product-wrapper.card-body")
+    products = soup.select(".thumbnail")
     return [parse_single_product(product) for product in products]
 
 
@@ -104,7 +104,7 @@ def get_products_multi_page(url: str) -> list[Product]:
             break
     page_source = driver.page_source
     soup = BeautifulSoup(page_source, "html.parser")
-    products = soup.select(".product-wrapper.card-body")
+    products = soup.select(".thumbnail")
     return [parse_single_product(product) for product in products]
 
 
