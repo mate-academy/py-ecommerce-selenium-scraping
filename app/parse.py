@@ -25,15 +25,6 @@ class Product:
     num_of_reviews: int
 
 
-def extract_number_from_str(string: str) -> float:
-    num = []
-
-    for char in string:
-        if char.isdigit():
-            num.append(char)
-    return float("".join(num))
-
-
 def get_all_item_with_pagination() -> None:
     try:
         button = driver.find_element(
