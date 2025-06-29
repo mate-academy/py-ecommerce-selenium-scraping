@@ -79,14 +79,14 @@ def parse_product_bs4(product_tag: Tag) -> Product:
 def parse_product_selenium(product_element: WebElement) -> Product:
 
     title = product_element.find_element(
-        By.CSS_SELECTOR, # <-- ВИПРАВЛЕНО
+        By.CSS_SELECTOR,
         ".caption a.title",
     ).get_attribute("title").strip()
     description = product_element.find_element(
-        By.CSS_SELECTOR, # <-- ВИПРАВЛЕНО
+        By.CSS_SELECTOR,
         ".caption p.description",
     ).text.strip()
-    price_text = product_element.find_element(By.CSS_SELECTOR, "h4.price").text # <-- ВИПРАВЛЕНО
+    price_text = product_element.find_element(By.CSS_SELECTOR, "h4.price").text
     price = float(price_text.replace("$", "").strip())
 
     ratings_container = product_element.find_element(By.CLASS_NAME, "ratings")
@@ -94,7 +94,7 @@ def parse_product_selenium(product_element: WebElement) -> Product:
     rating = len(star_icons)
 
     num_of_reviews_element = product_element.find_element(
-        By.CSS_SELECTOR, # <-- ВИПРАВЛЕНО
+        By.CSS_SELECTOR,
         ".review-count span[itemprop='reviewCount']",
     )
     num_of_reviews = 0
