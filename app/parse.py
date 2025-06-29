@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup, Tag
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
+from selenium.webdriver.common.by import By # <-- Тут все правильно
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
@@ -79,14 +79,14 @@ def parse_product_bs4(product_tag: Tag) -> Product:
 def parse_product_selenium(product_element: WebElement) -> Product:
 
     title = product_element.find_element(
-        By.CSS_SELecTOR,
+        By.CSS_SELECTOR, # <-- ВИПРАВЛЕНО
         ".caption a.title",
     ).get_attribute("title").strip()
     description = product_element.find_element(
-        By.CSS_SELecTOR,
+        By.CSS_SELECTOR, # <-- ВИПРАВЛЕНО
         ".caption p.description",
     ).text.strip()
-    price_text = product_element.find_element(By.CSS_SELecTOR, "h4.price").text
+    price_text = product_element.find_element(By.CSS_SELECTOR, "h4.price").text # <-- ВИПРАВЛЕНО
     price = float(price_text.replace("$", "").strip())
 
     ratings_container = product_element.find_element(By.CLASS_NAME, "ratings")
@@ -94,7 +94,7 @@ def parse_product_selenium(product_element: WebElement) -> Product:
     rating = len(star_icons)
 
     num_of_reviews_element = product_element.find_element(
-        By.CSS_SELecTOR,
+        By.CSS_SELECTOR, # <-- ВИПРАВЛЕНО
         ".review-count span[itemprop='reviewCount']",
     )
     num_of_reviews = 0
@@ -132,7 +132,7 @@ def click_more_until_disabled(
     while True:
         try:
             more_button = wait.until(
-                ec.element_to_be_clickable((By.CSS_SELecTOR, button_selector))
+                ec.element_to_be_clickable((By.CSS_SELECTOR, button_selector))
             )
 
             if more_button.get_attribute("disabled"):
@@ -162,7 +162,6 @@ def click_more_until_disabled(
             print("The 'More' button has disappeared.")
             break
         except Exception as e:
-            # Загальна обробка інших непередбачених помилок
             print(f"Unexpected error when clicking 'More': {e}")
             break
 
@@ -192,15 +191,15 @@ def get_products_for_dynamic_page(
 
     WebDriverWait(driver, 10).until(
         ec.presence_of_element_located(
-            By.CSS_SELecTOR,
-            ".product-wrapper.card-body")
+            (By.CSS_SELECTOR, ".product-wrapper.card-body")
+        )
     )
 
     click_more_until_disabled(driver, button_selector)
 
     products_data = []
     product_elements = driver.find_elements(
-        By.CSS_SELecTOR,
+        By.CSS_SELECTOR,
         ".product-wrapper.card-body",
     )
     for product_element in product_elements:
@@ -214,6 +213,7 @@ def get_all_products() -> None:
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
+
         get_products_for_static_page(HOME_URL, "home")
         get_products_for_static_page(COMPUTERS_URL, "computers")
         get_products_for_static_page(PHONES_URL, "phones")
