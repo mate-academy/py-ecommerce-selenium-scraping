@@ -5,11 +5,11 @@ BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 
 COMPUTERS_URL = urljoin(HOME_URL, "computers/")
-TABLETS_URL = urljoin(COMPUTERS_URL, "tablets/")
-LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops/")
+TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
+LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
 
 PHONES_URL = urljoin(HOME_URL, "phones/")
-TOUCH_URL = urljoin(PHONES_URL, "touch/")
+TOUCH_URL = urljoin(PHONES_URL, "touch")
 
 
 @dataclass
