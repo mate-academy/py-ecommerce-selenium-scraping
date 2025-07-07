@@ -1,13 +1,14 @@
-from dataclasses import dataclass, fields
+import csv
+import re
+from dataclasses import dataclass, fields, astuple
 from time import sleep
 from urllib.parse import urljoin
 
 from bs4 import Tag, BeautifulSoup
 from selenium import webdriver
-from selenium.common import TimeoutException
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.wait import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
@@ -59,18 +60,17 @@ def load_full_page(url: str) -> str:
     button_class = (By.CLASS_NAME, "ecomerce-items-scroll-more")
 
     while True:
-        sleep(1)
         buttons = driver.find_elements(*button_class)
         if not buttons:
             break
 
         button = buttons[0]
-        try:
-            WebDriverWait(driver, 1).until(
-                EC.visibility_of_element_located((button_class))
-            )
-        except TimeoutException:
-            break
+        # try:
+        #     WebDriverWait(driver, 0.2).until(
+        #         EC.visibility_of_element_located(button_class)
+        #     )
+        # except TimeoutException:
+        #     break
 
         if (
             buttons
@@ -78,16 +78,9 @@ def load_full_page(url: str) -> str:
             and button.is_enabled()
             and button.value_of_css_property("display") != "none"
         ):
-            driver.execute_script(
-                "arguments[0].scrollIntoView({block:'center'});", button
-            )
-            try:
-                WebDriverWait(driver, 1).until(
-                    EC.element_to_be_clickable(button)
-                )
-            except TimeoutException:
-                break
+
             button.click()
+            sleep(0.2)
         else:
             break
     return driver.page_source
@@ -101,9 +94,13 @@ def get_products(url: str) -> list[Product]:
     return products
 
 
+def normalize_space(text: str) -> str:
+    return re.sub(r"\s+", " ", text).replace("\xa0", " ").strip()
+
+
 def productify(data: Tag) -> Product:
     title = data.select_one("a.title")["title"]
-    description = data.select_one("p.description").text
+    description = normalize_space(data.select_one("p.description").text)
     price = float(data.select_one("h4.price").text.replace("$", ""))
     rating_data = data.select_one(".ratings")
     rating = len(rating_data.select("span.ws-icon-star"))
@@ -111,6 +108,18 @@ def productify(data: Tag) -> Product:
         rating_data.find("span", attrs={"itemprop": "reviewCount"}).text
     )
     return Product(title, description, price, rating, num_of_reviews)
+
+
+def write_csv_file(file_name: str, products: list[Product]) -> None:
+    with open(file_name, "w", newline="") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(PRODUCT_FIELDS)
+        writer.writerows(astuple(product) for product in products)
+
+
+def write_csv_files(*files: tuple[str, list[Product]]) -> None:
+    for file_name, products in files:
+        write_csv_file(file_name, products)
 
 
 def get_all_products() -> None:
@@ -123,7 +132,7 @@ def get_all_products() -> None:
         laptops = ("laptops.csv", get_products(LAPTOPS_URL))
         phones = ("phones.csv", get_products(PHONES_URL))
         touch = ("touch.csv", get_products(TOUCH_URL))
-        print(laptops)
+    write_csv_files(home, computers, tablets, laptops, phones, touch)
 
 
 if __name__ == "__main__":
