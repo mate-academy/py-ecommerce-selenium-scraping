@@ -104,6 +104,7 @@ def get_products_from_page(home_url: str, path: str = None):
 def get_all_products() -> None:
     get_products_from_page(home_url=HOME_URL)
     get_products_from_page(home_url=HOME_URL, path="computers")
+    get_products_from_page(home_url=HOME_URL, path="phones")
 
 
 if __name__ == "__main__":
