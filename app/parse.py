@@ -30,7 +30,7 @@ class Product:
 
 
 def save_data_to_csv(name: str, products: list[Product]) -> None:
-    with open(f"{name}.csw", mode="w", newline="", encoding="utf-8") as csvfile:
+    with open(f"{name}.csv", mode="w", newline="", encoding="utf-8") as csvfile:
         fieldnames = [field.name for field in fields(Product)]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -88,15 +88,22 @@ def get_products_from_single_page(soup: BeautifulSoup) -> list[Product] | None:
     return products
 
 
-def get_products_from_home(url: str) -> list[Product]:
+def get_products_from_page(home_url: str, path: str = None):
+    url = urljoin(home_url, path)
+    logging.info(f"Working on {url}")
     soup = get_soup_from_page(url=url)
+
     products = get_products_from_single_page(soup=soup)
-    return products
+
+    name_of_csv_file = "home"
+    if path:
+        name_of_csv_file = path.split("/")[-1]
+    save_data_to_csv(name=name_of_csv_file, products=products)
 
 
 def get_all_products() -> None:
-    home_products = get_products_from_home(url=HOME_URL)
-    save_data_to_csv(name="home", products=home_products)
+    get_products_from_page(home_url=HOME_URL)
+    get_products_from_page(home_url=HOME_URL, path="computers")
 
 
 if __name__ == "__main__":
