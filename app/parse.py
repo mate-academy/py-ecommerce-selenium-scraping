@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 import sys
 from dataclasses import dataclass, fields, asdict
@@ -6,6 +7,8 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,6 +21,8 @@ logging.basicConfig(
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+
+driver = webdriver.Chrome()
 
 
 @dataclass
@@ -58,16 +63,41 @@ def get_soup_from_page(url: str) -> BeautifulSoup | None:
 
 def get_product_price(product: Tag) -> float:
     price_container = product.select_one(".price")
-    price = price_container.select_one("[itemprop='price']").text.strip().replace("$", "")
-    return float(price)
+    if not price_container:
+        return 0.0
+
+    # Try nested [itemprop='price'] first
+    price_tag = price_container.select_one("[itemprop='price']")
+    if price_tag:
+        price_text = price_tag.text.strip()
+    else:
+        price_text = price_container.text.strip()
+
+    price_text = price_text.replace("$", "")
+
+    try:
+        return float(price_text)
+    except ValueError:
+        return 0.0
 
 
 def get_product_ratings(product: Tag) -> dict:
     ratings_container = product.select_one(".ratings")
+
+    star_count = 0
     rating_tag = ratings_container.select_one("p[data-rating]")
+    if rating_tag is None:
+        try:
+            stars = product.select(".ws-icon.ws-icon-star")
+            star_count = len(stars)
+        except Exception as e:
+            logging.info(f"Cannot calculate stars on card!: {e}")
+    else:
+        star_count = rating_tag["data-rating"]
+
     num_of_reviews = ratings_container.select_one("[itemprop='reviewCount']").text.strip()
 
-    return {"rating": int(rating_tag["data-rating"]), "num_of_reviews": int(num_of_reviews)}
+    return {"rating": int(star_count), "num_of_reviews": int(num_of_reviews)}
 
 
 def get_product_title(product):
@@ -75,25 +105,65 @@ def get_product_title(product):
     return title_container["title"]
 
 
-def get_products_from_single_page(soup: BeautifulSoup) -> list[Product] | None:
-    products = []
-    for product in soup.select(".card-body"):
-        products.append(Product(
-            title=get_product_title(product=product),
-            description=product.select_one(".description ").text,
-            price=get_product_price(product=product),
-            rating=get_product_ratings(product=product)["rating"],
-            num_of_reviews=get_product_ratings(product=product)["num_of_reviews"]
-        ))
-    return products
+def create_product_obj(card: Tag) -> Product:
+    ratings = get_product_ratings(product=card)
+    return Product(
+        title=get_product_title(product=card),
+        description=card.select_one(".description ").text,
+        price=get_product_price(product=card),
+        rating=ratings["rating"],
+        num_of_reviews=ratings["num_of_reviews"]
+    )
 
+
+def get_html_via_selenium(url: str) -> BeautifulSoup:
+    driver.get(url)
+    try:
+        html = driver.page_source
+        soup = BeautifulSoup(html, 'html.parser')
+        return soup
+    except Exception as e:
+        logging.info(f"Element not found:{e}")
+    finally:
+        driver.quit()
+
+
+def is_btn_more(url) -> bool:
+    driver.get(url)
+
+    try:
+        element = driver.find_element(By.CSS_SELECTOR, ".some-class")
+
+        if element.is_displayed():
+            print("Element is visible")
+        else:
+            print("Element is hidden")
+    except Exception as e:
+        print("Element not found:", e)
+
+
+def get_products_from_single_page(soup: BeautifulSoup, url: str) -> list[Product] | None:
+    products = []
+    # Check button more than load all cards
+    if is_btn_more(url=url) or not soup.select_one(".card-body"):
+        logging.info("this page with more button")
+        soup = get_html_via_selenium(url=url)
+
+    cards = soup.select(".card-body")
+    if cards:
+        for card in cards:
+            products.append(create_product_obj(card=card))
+    else:
+        logging.info("Cards not found!")
+    return products
 
 def get_products_from_page(home_url: str, path: str = None):
     url = urljoin(home_url, path)
     logging.info(f"Working on {url}")
+
     soup = get_soup_from_page(url=url)
 
-    products = get_products_from_single_page(soup=soup)
+    products = get_products_from_single_page(soup=soup, url=url)
 
     name_of_csv_file = "home"
     if path:
@@ -102,9 +172,10 @@ def get_products_from_page(home_url: str, path: str = None):
 
 
 def get_all_products() -> None:
-    get_products_from_page(home_url=HOME_URL)
-    get_products_from_page(home_url=HOME_URL, path="computers")
-    get_products_from_page(home_url=HOME_URL, path="phones")
+    get_products_from_page(home_url=HOME_URL)  # home page (3 random products);
+    get_products_from_page(home_url=HOME_URL, path="computers")  # computers page (3 random computers)
+    get_products_from_page(home_url=HOME_URL, path="phones")  # phones page (3 random phones);
+    get_products_from_page(home_url=HOME_URL, path="computers/laptops")  # laptops page (117 laptops) with more button pagination
 
 
 if __name__ == "__main__":
