@@ -1,0 +1,49 @@
+[   DEBUG]: Selenium Manager binary found at: C:\Mate academy\py-ecommerce-selenium-scraping\.venv\Lib\site-packages\selenium\webdriver\common\windows\selenium-manager.exe
+[   DEBUG]: Executing process: C:\Mate academy\py-ecommerce-selenium-scraping\.venv\Lib\site-packages\selenium\webdriver\common\windows\selenium-manager.exe --browser chrome --debug --language-binding python --output json
+[   DEBUG]: chromedriver not found in PATH
+[   DEBUG]: chrome detected at C:\Program Files\Google\Chrome\Application\chrome.exe
+[   DEBUG]: Detected browser: chrome 138.0.7204.185
+[   DEBUG]: Required driver: chromedriver 138.0.7204.183
+[   DEBUG]: chromedriver 138.0.7204.183 already in the cache
+[   DEBUG]: Driver path: C:\Users\User\.cache\selenium\chromedriver\win64\138.0.7204.183\chromedriver.exe
+[   DEBUG]: Browser path: C:\Program Files\Google\Chrome\Application\chrome.exe
+[   DEBUG]: Started executable: `C:\Users\User\.cache\selenium\chromedriver\win64\138.0.7204.183\chromedriver.exe` in a child process with pid: 22228 using 0 to output -3
+[   DEBUG]: POST http://localhost:50741/session {'capabilities': {'firstMatch': [{}], 'alwaysMatch': {'browserName': 'chrome', 'pageLoadStrategy': <PageLoadStrategy.normal: 'normal'>, 'browserVersion': None, 'goog:chromeOptions': {'extensions': [], 'binary': 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', 'args': []}}}}
+[   DEBUG]: Starting new HTTP connection (1): localhost:50741
+[   DEBUG]: http://localhost:50741 "POST /session HTTP/1.1" 200 0
+[   DEBUG]: Remote response: status=200 | data={"value":{"capabilities":{"acceptInsecureCerts":false,"browserName":"chrome","browserVersion":"138.0.7204.185","chrome":{"chromedriverVersion":"138.0.7204.183 (e90faf484ddbc033fc9bf337621761d3dd5c5289-refs/branch-heads/7204@{#2435})","userDataDir":"C:\\Users\\User\\AppData\\Local\\Temp\\scoped_dir22228_1350008151"},"fedcm:accounts":true,"goog:chromeOptions":{"debuggerAddress":"localhost:50744"},"networkConnectionEnabled":false,"pageLoadStrategy":"normal","platformName":"windows","proxy":{},"setWindowRect":true,"strictFileInteractability":false,"timeouts":{"implicit":0,"pageLoad":300000,"script":30000},"unhandledPromptBehavior":"dismiss and notify","webauthn:extension:credBlob":true,"webauthn:extension:largeBlob":true,"webauthn:extension:minPinLength":true,"webauthn:extension:prf":true,"webauthn:virtualAuthenticators":true},"sessionId":"fc44fc114132e96655622ca26634baf0"}} | headers=HTTPHeaderDict({'Content-Length': '883', 'Content-Type': 'application/json; charset=utf-8', 'cache-control': 'no-cache'})
+[   DEBUG]: Finished Request
+[    INFO]: Start parsing laptops
+[   DEBUG]: Starting new HTTPS connection (1): webscraper.io:443
+[   DEBUG]: https://webscraper.io:443 "GET /test-sites/e-commerce/computers/laptops/ HTTP/1.1" 404 None
+[   DEBUG]: DELETE http://localhost:50741/session/fc44fc114132e96655622ca26634baf0 {}
+[   DEBUG]: http://localhost:50741 "DELETE /session/fc44fc114132e96655622ca26634baf0 HTTP/1.1" 200 0
+[   DEBUG]: Remote response: status=200 | data={"value":null} | headers=HTTPHeaderDict({'Content-Length': '14', 'Content-Type': 'application/json; charset=utf-8', 'cache-control': 'no-cache'})
+[   DEBUG]: Finished Request
+[    INFO]: Opening https://webscraper.io/test-sites/e-commerce/more/ (click_more=False)
+[    INFO]: Found 3 thumbnail elements on https://webscraper.io/test-sites/e-commerce/more/
+[    INFO]: Wrote 3 products to home.csv
+[    INFO]: Page home done, 3 products saved
+[    INFO]: Opening https://webscraper.io/test-sites/e-commerce/more/computers (click_more=False)
+[    INFO]: Found 3 thumbnail elements on https://webscraper.io/test-sites/e-commerce/more/computers
+[    INFO]: Wrote 3 products to computers.csv
+[    INFO]: Page computers done, 3 products saved
+[    INFO]: Opening https://webscraper.io/test-sites/e-commerce/more/computers/laptops (click_more=True)
+[    INFO]: Clicked load-more 19 times
+[    INFO]: Found 117 thumbnail elements on https://webscraper.io/test-sites/e-commerce/more/computers/laptops
+[    INFO]: Wrote 117 products to laptops.csv
+[    INFO]: Page laptops done, 117 products saved
+[    INFO]: Opening https://webscraper.io/test-sites/e-commerce/more/computers/tablets (click_more=True)
+[    INFO]: Clicked load-more 3 times
+[    INFO]: Found 21 thumbnail elements on https://webscraper.io/test-sites/e-commerce/more/computers/tablets
+[    INFO]: Wrote 21 products to tablets.csv
+[    INFO]: Page tablets done, 21 products saved
+[    INFO]: Opening https://webscraper.io/test-sites/e-commerce/more/phones (click_more=False)
+[    INFO]: Found 3 thumbnail elements on https://webscraper.io/test-sites/e-commerce/more/phones
+[    INFO]: Wrote 3 products to phones.csv
+[    INFO]: Page phones done, 3 products saved
+[    INFO]: Opening https://webscraper.io/test-sites/e-commerce/more/phones/touch (click_more=True)
+[    INFO]: Clicked load-more 1 times
+[    INFO]: Found 9 thumbnail elements on https://webscraper.io/test-sites/e-commerce/more/phones/touch
+[    INFO]: Wrote 9 products to touch.csv
+[    INFO]: Page touch done, 9 products saved
