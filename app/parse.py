@@ -102,8 +102,6 @@ def process_page(url: str, output_csv: str, use_scroll: bool = False):
 
 
 def get_all_products() -> None:
-    pass
-
     pages = [
         ("home", HOME_URL, False),
         ("computers", urljoin(HOME_URL, "computers"), False),
