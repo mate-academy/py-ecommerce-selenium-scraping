@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from app.parse import get_all_products, Product
+from app.parse import get_all_products
+from app.models import Product
 
 
 TEST_DIR = Path(__file__).resolve().parent
@@ -22,7 +23,9 @@ def test_random_pages_csv_file_is_created(page):
 
 @pytest.mark.parametrize("page", ["laptops", "tablets", "touch"])
 def test_static_products_are_correct(page):
-    with open(TEST_DIR / f"correct_{page}.csv", "r") as correct_file, open(f"{page}.csv", "r") as result_file:
+    with open(TEST_DIR / f"correct_{page}.csv", "r") as correct_file, open(
+        f"{page}.csv", "r"
+    ) as result_file:
         correct_reader = csv.reader(correct_file)
         result_reader = csv.reader(result_file)
 
