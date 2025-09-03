@@ -24,4 +24,4 @@ def accept_cookies() -> None:
             )
         )
     except TimeoutException as e:
-        logger(f"Error: {e}")
+        logger.error(f"Error: {e}")
