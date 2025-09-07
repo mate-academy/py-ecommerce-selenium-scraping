@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.parse import get_all_products, Product
+from app.parse import Product, main
 
 
 TEST_DIR = Path(__file__).resolve().parent
@@ -12,7 +12,7 @@ TEST_DIR = Path(__file__).resolve().parent
 
 @pytest.fixture(scope="session", autouse=True)
 def run_scraper():
-    get_all_products()
+    main()
 
 
 @pytest.mark.parametrize("page", ["home", "computers", "phones"])
