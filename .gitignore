@@ -6,4 +6,9 @@
 venv/
 .pytest_cache/
 **__pycache__/
-**.csv
+**/*.csv
+
+!tests/
+!tests/correct_laptops.csv
+!tests/correct_tablets.csv
+!tests/correct_touch.csv
