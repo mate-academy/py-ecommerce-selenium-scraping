@@ -50,7 +50,9 @@ def cookies(driver: webdriver) -> None:
         )
 
         accept_cookie.click()
-        time.sleep(5)
+        wait.until(
+            EC.invisibility_of_element_located((By.CLASS_NAME, "acceptCookies"))
+        )
     except TimeoutException:
         print("cookie doesn't found")
 
@@ -71,7 +73,7 @@ def scroll_more(driver: webdriver) -> None:
             break
 
 
-def get_one_product(driver: webdriver) -> List[Product]:
+def get_one_product(driver: webdriver) -> list[Product]:
     elements = driver.find_elements(By.CLASS_NAME, "thumbnail")
     arr = []
     for element in elements:
@@ -104,13 +106,17 @@ def get_one_product(driver: webdriver) -> List[Product]:
 def handle_page(filename: str, url: str) -> None:
     driver = get_driver()
     driver.get(url)
+    WebDriverWait(driver, 5).until(
+        EC.presence_of_all_elements_located((By.CLASS_NAME, "thumbnail"))
+    )
     cookies(driver)
     scroll_more(driver)
     output_info = get_one_product(driver)
     write_products_to_csv(filename, output_info)
+    driver.quit()
 
 
-def write_products_to_csv(filename: str, information: str) -> None:
+def write_products_to_csv(filename: str, information: List[Product]) -> None:
     with open(filename, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(PRODUCT_NAME)
