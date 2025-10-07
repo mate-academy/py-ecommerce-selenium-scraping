@@ -34,7 +34,7 @@ PRODUCT_NAME = [field.name for field in fields(Product)]
 
 def get_driver() -> webdriver:
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
 
     driver = webdriver.Chrome(options=options)
     return driver
