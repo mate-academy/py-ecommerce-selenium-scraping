@@ -1,5 +1,6 @@
 import csv
 from dataclasses import dataclass, astuple
+from selenium.webdriver.support import expected_conditions
 from typing import Generator
 from urllib.parse import urljoin
 
@@ -7,11 +8,12 @@ from selenium import webdriver
 from selenium.common import (
     NoSuchElementException,
     ElementNotInteractableException,
-    ElementClickInterceptedException,
+    ElementClickInterceptedException, TimeoutException,
 )
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.wait import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -116,12 +118,21 @@ def get_all_products() -> None:
         for page, url in urls.items():
             driver.get(url)
             try:
-                accept_cookie_button = driver.find_element(
-                    By.CSS_SELECTOR,
-                    ".acceptCookies",
+                wait = WebDriverWait(driver, 3)
+                accept_cookie_button = wait.until(
+                    expected_conditions.element_to_be_clickable(
+                        (
+                            By.CSS_SELECTOR,
+                            ".acceptCookies"
+                        )
+                    )
                 )
                 accept_cookie_button.click()
-            except NoSuchElementException:
+            except (
+                    TimeoutException,
+                    ElementClickInterceptedException,
+                    NoSuchElementException
+            ):
                 pass
 
             products = parse_list_page(driver)
