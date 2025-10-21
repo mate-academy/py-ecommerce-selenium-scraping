@@ -8,16 +8,19 @@ from dataclasses import fields as dc_fields
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
-from selenium.common.exceptions import (TimeoutException,
-                                        ElementClickInterceptedException)
+from selenium.common.exceptions import TimeoutException
+from typing import TypeVar
 
+
+T = TypeVar("T")
 try:
     # Optional nice progress bars
     from tqdm import tqdm
 except Exception:  # pragma: no cover
-    def tqdm(iterable: list, **kwargs) -> list:
+    def tqdm(iterable: T, **kwargs) -> T:
         return iterable
 
 
@@ -32,9 +35,9 @@ except Exception:  # pragma: no cover
 class Product:
     title: str = "title"
     description: str = "description"
-    price: float = "price"
-    rating: int = "rating"
-    num_of_reviews: int = "reviews"
+    price: float = 0.0
+    rating: int = 0
+    num_of_reviews: int = 0
     # url: str = "url"
 
 
@@ -84,59 +87,87 @@ def accept_cookies_if_present(
             pass  # Try next selector
 
 
-def click_show_more_until_exhausted(
+def click_more_until_exhausted(
         driver: webdriver.Chrome,
-        max_clicks: int = 200
+        max_clicks: int = 400
 ) -> None:
     """
-    The Laptops/Tablets/Touch pages use a
-    'Show more' button that loads more cards.
-    We repeatedly click it until it disappears or stops adding items.
+    Click the 'More' button (class ecomerce-items-scroll-more) until:
+      - the button disappears,
+      - the button becomes disabled,
+      - or no new items appear after a click.
+    Works for the /e-commerce/more site variant.
     """
+    # Accept both misspelled and (just in case) correctly spelled variants
+    btn_sel = "a.ecomerce-items-scroll-more, a.ecommerce-items-scroll-more"
+
+    def is_disabled(btn: WebElement) -> bool:
+        cls = (btn.get_attribute("class") or "").lower()
+        aria = (btn.get_attribute("aria-disabled") or "").lower()
+        disabled = btn.get_attribute("disabled")
+        return "disabled" in cls or aria in ("true", "1") or bool(disabled)
+
     last_count = -1
     for _ in range(max_clicks):
-        # Count current cards
+        # Current number of cards
         cards = driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
-        count = len(cards)
-        if count == last_count:
-            break  # no more items added after last click
-        last_count = count
+        count_before = len(cards)
 
-        # Try to find/click the button;
-        # if not found or not clickable, we’re done
-        try:
-            btn = WebDriverWait(driver, 5).until(
-                ec.element_to_be_clickable(
-                    (By.XPATH, "//button[contains(., 'Show more')]")
-                )
-            )
-        except TimeoutException:
+        # If nothing changed over the last loop, we may be done
+        if count_before == last_count:
+            btns = driver.find_elements(By.CSS_SELECTOR, btn_sel)
+            if not btns:
+                break
+            if is_disabled(btns[0]):
+                break
+        last_count = count_before
+
+        # Find the button
+        btns = driver.find_elements(By.CSS_SELECTOR, btn_sel)
+        if not btns:
+            break
+        btn = btns[0]
+        if is_disabled(btn):
             break
 
+        # Scroll into view & click
         try:
             driver.execute_script(
-                "arguments[0].scrollIntoView({block: 'center'});", btn
+                "arguments[0].scrollIntoView({block:'center'});", btn
             )
-            time.sleep(0.2)
-            btn.click()
-            # Allow fetch/render
-            time.sleep(0.6)
-        except (ElementClickInterceptedException, TimeoutException):
-            # Try JS click as a fallback
+            time.sleep(0.15)
             try:
-                driver.execute_script("arguments[0].click();", btn)
-                time.sleep(0.6)
+                btn.click()
             except Exception:
-                break
+                # Fallback to JS click
+                driver.execute_script("arguments[0].click();", btn)
+        except Exception:
+            break
+
+        # Wait for more items to load (count must increase)
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda d: len(
+                    d.find_elements(By.CSS_SELECTOR, ".thumbnail")
+                ) > count_before
+            )
+        except TimeoutException:
+            # No increase → likely exhausted
+            break
+
+        # Small settle time (images/layout)
+        time.sleep(0.2)
 
 
 def _default_for_type(type_annotation: type) -> object:
     try:
-        origin = type_annotation.__origin__  # typing hints like Optional[str]
+        origin = type_annotation.__origin__
     except AttributeError:
         origin = None
-    if type_annotation in (int,) or origin is int:
+    if type_annotation in (int, float) or origin in (int, float):
         return 0
+    if type_annotation in (bool,) or origin is bool:
+        return False
     return ""
 
 
@@ -186,14 +217,21 @@ def parse_product_cards(driver: webdriver) -> list[Product]:
 
         # Rating = star count
         try:
-            rating_p = el.find_element(By.CSS_SELECTOR, "p[data-rating]")
-            # Prefer counting visible stars; fallback to the data attribute
-            stars = rating_p.find_elements(
-                By.CSS_SELECTOR, ".ws-icon.ws-icon-star"
+            stars = el.find_elements(
+                By.CSS_SELECTOR,
+                "p .ws-icon.ws-icon-star"
             )
-            rating = len(stars) if stars else int(
-                rating_p.get_attribute("data-rating") or 0
-            )
+            if stars:
+                rating = len(stars)
+            else:
+                rating_p = el.find_element(By.CSS_SELECTOR, "p[data-rating]")
+                stars = rating_p.find_elements(
+                    By.CSS_SELECTOR,
+                    ".ws-icon.ws-icon-star"
+                )
+                rating = len(stars) if stars else int(
+                    rating_p.get_attribute("data-rating") or 0
+                )
         except Exception:
             rating = 0
 
@@ -211,7 +249,7 @@ def parse_product_cards(driver: webdriver) -> list[Product]:
         data = {
             "title": title or "",
             "description": description or "",
-            "price": price or "",
+            "price": price if price is not None else "",
             "rating": rating,
             "num_of_reviews": reviews,
             # "url": url or "",          # will be ignored if not in dataclass
@@ -235,7 +273,7 @@ def write_csv(path: str, rows: list[Product]) -> None:
 # Main orchestration
 # ──────────────────────────────────────────────────────────────────────────────
 def get_all_products(
-        base: str = "https://webscraper.io/test-sites/e-commerce/allinone",
+        base: str = "https://webscraper.io/test-sites/e-commerce/more",
         headless: bool = True,
         out_dir: str = ".",
 ) -> None:
@@ -276,7 +314,7 @@ def get_all_products(
 
             # Handle “Show more” pages
             if page_name in {"laptops", "tablets", "touch"}:
-                click_show_more_until_exhausted(driver)
+                click_more_until_exhausted(driver)
 
             products = parse_product_cards(driver)
             # Write per-page CSV
