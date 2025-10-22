@@ -12,7 +12,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.common.exceptions import TimeoutException
-from typing import TypeVar
+from typing import TypeVar, get_origin, get_args, Union
 
 
 T = TypeVar("T")
@@ -159,15 +159,62 @@ def click_more_until_exhausted(
         time.sleep(0.2)
 
 
-def _default_for_type(type_annotation: type) -> object:
-    try:
-        origin = type_annotation.__origin__
-    except AttributeError:
-        origin = None
-    if type_annotation in (int, float) or origin in (int, float):
+def _default_for_type(tp: type) -> object:
+    """
+    Return a sensible default for a field type annotation.
+    - float -> 0.0
+    - int   -> 0
+    - bool  -> False
+    - str   -> ""
+    Also detects these types when wrapped in Optional[...] / Union[...].
+    Works if annotations are strings (PEP 563/postponed eval).
+    """
+    # Handle string annotations (e.g., "float", "int", "Optional[float]")
+    if isinstance(tp, str):
+        low = tp.lower().replace("typing.", "")
+        if "optional" in low or "union" in low:
+            # Quick path: check if 'float'/'int'/'bool'/'str' mentioned
+            if "float" in low:
+                return 0.0
+            if "int" in low:
+                return 0
+            if "bool" in low:
+                return False
+            return ""
+        if low.endswith("float"):
+            return 0.0
+        if low.endswith("int"):
+            return 0
+        if low.endswith("bool"):
+            return False
+        return ""
+
+    # Normal typing objects
+    origin = get_origin(tp)
+    args = get_args(tp)
+
+    # Direct concrete types
+    if tp is float:
+        return 0.0
+    if tp is int:
         return 0
-    if type_annotation in (bool,) or origin is bool:
+    if tp is bool:
         return False
+    if tp is str:
+        return ""
+
+    # Optional/Union[...] cases
+    if origin is Union:
+        if float in args:
+            return 0.0
+        if int in args:
+            return 0
+        if bool in args:
+            return False
+        if str in args:
+            return ""
+
+    # Fallback: treat as string-like
     return ""
 
 
