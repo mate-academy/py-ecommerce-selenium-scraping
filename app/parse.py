@@ -98,9 +98,7 @@ def check_and_click_more_buttons(driver: WebDriver) -> None:
 def parse_product(product: Tag) -> Product:
     price = product.select_one(".price")
     if not price:
-        price = product.select_one(
-            "span[itemprop='price']"
-        )
+        price = product.select_one("span[itemprop='price']")
 
     rating = len(product.select(".ws-icon-star"))
     if not rating:
@@ -111,9 +109,7 @@ def parse_product(product: Tag) -> Product:
         description=normalize_text(product.select_one(".description").text),
         price=float(price.text.replace("$", "")),
         rating=rating,
-        num_of_reviews=int(product.select_one(
-            "span[itemprop='reviewCount']"
-        ).text),
+        num_of_reviews=int(product.select_one("span[itemprop='reviewCount']").text),
     )
 
 
