@@ -1,7 +1,6 @@
 import csv
 import logging
 import sys
-import time
 from dataclasses import dataclass, fields, asdict
 from typing import List
 from urllib.parse import urljoin
@@ -103,18 +102,25 @@ def get_page_products(page_url: str) -> List[Product]:
         )
         cookie_accept_button.click()
         logging.info("Pressed 'Accept Cookie' button.")
-        time.sleep(0.5)
+        wait.until(ec.invisibility_of_element_located((By.ID, "cookieBanner")))
     except NoSuchElementException:
         pass
 
     try:
         while True:
+            number_product_cards = len(
+                driver.find_elements(By.CLASS_NAME, "card")
+            )
+
             more_button = driver.find_element(
                 By.CLASS_NAME, "ecomerce-items-scroll-more"
             )
             more_button.click()
             logging.info("Pressed 'More' button to get more items.")
-            time.sleep(0.5)
+
+            wait.until(lambda d: (len(d.find_elements(
+                By.CLASS_NAME, "card")) > number_product_cards))
+
     except (NoSuchElementException, ElementNotInteractableException):
         pass
 
