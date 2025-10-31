@@ -100,7 +100,7 @@ def get_all_products(url: str | None = None) -> list[Product]:
     driver.quit()
 
     soup = BeautifulSoup(html, "html.parser")
-    products = soup.select(".product-wrapper.card-body")
+    products = soup.select(".thumbnail")
 
     for prod in products:
         all_products.append(parse_single_product(prod))
@@ -120,6 +120,7 @@ def main(output_csv_path: str, url: str | None = None) -> None:
     write_products_to_csv(products, output_csv_path)
 
 
-for i, url in enumerate(LIST_URL):
-    file_name = f"{list_name[i]}.csv"
-    main(file_name, url)
+if __name__ == "__main__":
+    for i, url in enumerate(LIST_URL):
+        file_name = f"{list_name[i]}.csv"
+        main(file_name, url)
