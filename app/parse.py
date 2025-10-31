@@ -64,13 +64,6 @@ def parse_single_product(product: Tag) -> Product:
     )
 
 
-def get_home_products(url: str) -> [Product]:
-    text = requests.get(url).content
-    soup = BeautifulSoup(text, "html.parser")
-    products = soup.select(".card-body")
-    return [parse_single_product(product) for product in products]
-
-
 def get_all_products(url: str | None = None) -> list[Product]:
     if url is None:
         url = LIST_URL[0]
