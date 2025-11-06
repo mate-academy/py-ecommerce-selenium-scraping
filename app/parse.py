@@ -2,8 +2,6 @@ from dataclasses import dataclass, fields
 from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.remote.webelement import WebElement
 import csv
 
@@ -15,7 +13,7 @@ PARSE_DATA = {
     "computers": urljoin(HOME_URL, "computers"),
     "laptops": urljoin(HOME_URL, "computers/laptops"),
     "tablets": urljoin(HOME_URL, "computers/tablets"),
-    "phones": urljoin(BASE_URL, "phones"),
+    "phones": urljoin(HOME_URL, "phones"),
     "touch": urljoin(HOME_URL, "phones/touch")
 }
 
@@ -32,13 +30,7 @@ class Product:
 
 class Browser():
     def __init__(self) -> None:
-        opera_path = (
-            r"C:\Users\Dream Machines\AppData"
-            r"\Local\Programs\Opera GX\opera.exe"
-        )
-        options = Options()
-        options.binary_location = opera_path
-        self.driver = webdriver.Chrome(service=Service(), options=options)
+        self.driver = webdriver.Edge()
 
     def open_page(self, page_link: str) -> None:
         self.driver.get(page_link)
@@ -59,7 +51,7 @@ def parse_buttons(browser: Browser, product: WebElement) -> dict | None:
                 browser.driver.find_element(By.CLASS_NAME, "price")
                 .text.replace("$", "")
             )
-    if product.find_element(By.CLASS_NAME).text == "HDD:" and result:
+    if product.find_element(By.CLASS_NAME, "memory").text == "HDD:" and result:
         return {"hdd prices": result}
     return result
 
@@ -70,33 +62,31 @@ def get_single_item(browser: Browser, product: WebElement) -> Product:
         description=product.find_element(By.CLASS_NAME, "description").text,
         price=float(product.find_element(By.CLASS_NAME, "price")
                     .text.replace("$", "")),
-        rating=int(product.find_element(By.CLASS_NAME,
-                                        "data-rating")["data-rating"]),
+        rating=int(product.find_element(By.CSS_SELECTOR,
+                                        "p[data-rating]")["data-rating"]),
         num_of_reviews=product.find_element(By.CLASS_NAME,
-                                            "review-count").text,
+                                            "review-count").text.split()[0],
         additional_info=parse_buttons(browser, product)
     )
 
 
 def get_products_list(browser: Browser,
-                      products: WebElement) -> tuple[list[Product],
-                                                     WebElement]:
-    pagination = browser.driver.find_element(By.CSS_SELECTOR, ".next a")
-    return (
-        [get_single_item(browser, product) for product in products],
-        pagination
-    )
+                      products: WebElement) -> list[Product]:
+    return [get_single_item(browser, product) for product in products]
 
 
 def get_items(browser: Browser, naming: str, page_link: str) -> None:
     browser.open_page(page_link)
+    more_button = browser.driver.find_element(
+        By.CLASS_NAME, "ecomerce-items-scroll-more"
+    )
+    while more_button:
+        more_button.click()
+        more_button = browser.driver.find_element(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
     products = browser.driver.find_elements(By.CLASS_NAME, "card-body")
-    scrapped, pagination = get_products_list(browser, products)
-    while pagination:
-        next_page = urljoin(BASE_URL, pagination["href"])
-        browser.open_page(next_page)
-        parsed_products, pagination = get_products_list(browser, products)
-        scrapped.extend(parsed_products)
+    scrapped = get_products_list(browser, products)
     with open(f"{naming}.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow([field.name for field in fields(Product)])
@@ -104,7 +94,8 @@ def get_items(browser: Browser, naming: str, page_link: str) -> None:
                           product.description,
                           product.price,
                           product.rating,
-                          product.num_of_reviews)
+                          product.num_of_reviews,
+                          product.additional_info)
                           for product in scrapped])
 
 
