@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.common.exceptions import NoSuchElementException
 import csv
 
 
@@ -41,7 +42,13 @@ class Browser():
 
 def parse_buttons(browser: Browser, product: WebElement) -> dict | None:
     result = None
-    swatches = product.find_element(By.CLASS_NAME, "swatches")
+    product_src = product.find_element(By.CSS_SELECTOR, "a title")["href"]
+    product_url = urljoin(BASE_URL, product_src)
+    browser.open_page(product_url)
+    try:
+        swatches = browser.driver.find_element(By.CLASS_NAME, "swatches")
+    except NoSuchElementException:
+        swatches = None
     if swatches:
         result = {}
         buttons = swatches.find_elements(By.CLASS_NAME, "buttons")
@@ -64,8 +71,9 @@ def get_single_item(browser: Browser, product: WebElement) -> Product:
                     .text.replace("$", "")),
         rating=int(product.find_element(By.CSS_SELECTOR,
                                         "p[data-rating]")["data-rating"]),
-        num_of_reviews=product.find_element(By.CLASS_NAME,
-                                            "review-count").text.split()[0],
+        num_of_reviews=int(product.find_element(
+            By.CLASS_NAME, "review-count").text.split()[0]
+        ),
         additional_info=parse_buttons(browser, product)
     )
 
@@ -77,15 +85,18 @@ def get_products_list(browser: Browser,
 
 def get_items(browser: Browser, naming: str, page_link: str) -> None:
     browser.open_page(page_link)
-    more_button = browser.driver.find_element(
-        By.CLASS_NAME, "ecomerce-items-scroll-more"
-    )
+    try:
+        more_button = browser.driver.find_element(
+            By.CLASS_NAME, "ecomerce-items-scroll-more"
+        )
+    except NoSuchElementException:
+        more_button = None
     while more_button:
         more_button.click()
         more_button = browser.driver.find_element(
             By.CLASS_NAME, "ecomerce-items-scroll-more"
         )
-    products = browser.driver.find_elements(By.CLASS_NAME, "card-body")
+    products = browser.driver.find_elements(By.CLASS_NAME, "thumbnail")
     scrapped = get_products_list(browser, products)
     with open(f"{naming}.csv", "w") as f:
         writer = csv.writer(f)
