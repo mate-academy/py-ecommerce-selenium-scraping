@@ -40,10 +40,8 @@ class Browser():
         self.driver.quit()
 
 
-def parse_buttons(browser: Browser, product: WebElement) -> dict | None:
+def parse_buttons(browser: Browser, product: WebElement, product_url) -> dict | None:
     result = None
-    product_src = product.find_element(By.CSS_SELECTOR, "a title")["href"]
-    product_url = urljoin(BASE_URL, product_src)
     browser.open_page(product_url)
     try:
         swatches = browser.driver.find_element(By.CLASS_NAME, "swatches")
@@ -63,7 +61,9 @@ def parse_buttons(browser: Browser, product: WebElement) -> dict | None:
     return result
 
 
-def get_single_item(browser: Browser, product: WebElement) -> Product:
+def get_single_item(browser: Browser, product_link: str) -> Product:
+    browser.open_page(product_link)
+    product = browser.driver.find_element(By.CLASS_NAME, "thumbnails")
     return Product(
         title=product.find_element(By.CLASS_NAME, "title")["title"],
         description=product.find_element(By.CLASS_NAME, "description").text,
@@ -78,26 +78,34 @@ def get_single_item(browser: Browser, product: WebElement) -> Product:
     )
 
 
-def get_products_list(browser: Browser,
-                      products: WebElement) -> list[Product]:
-    return [get_single_item(browser, product) for product in products]
+def get_products_list(browser: Browser) -> list[Product]:
+    product_urls = [
+        a_tag.get_attribute("href") for a_tag in browser.driver.find_elements(By.CSS_SELECTOR, "a.title")
+    ]
+    product_parsed = []
+    for url in product_urls:
+        product_url = urljoin(BASE_URL, url)
+        product_parsed.append(product_parsed.append(get_single_item(browser, product_url)))
+    return product_parsed
 
 
-def get_items(browser: Browser, naming: str, page_link: str) -> None:
-    browser.open_page(page_link)
+def get_more_button(browser: Browser) -> WebElement | None:
     try:
         more_button = browser.driver.find_element(
             By.CLASS_NAME, "ecomerce-items-scroll-more"
         )
     except NoSuchElementException:
         more_button = None
-    while more_button:
-        more_button.click()
-        more_button = browser.driver.find_element(
-            By.CLASS_NAME, "ecomerce-items-scroll-more"
-        )
-    products = browser.driver.find_elements(By.CLASS_NAME, "thumbnail")
-    scrapped = get_products_list(browser, products)
+    return more_button
+
+
+def get_items(browser: Browser, naming: str, page_link: str) -> None:
+    browser.open_page(page_link)
+    button = get_more_button(browser)
+    while button:
+        button.click()
+        button = get_more_button(browser)
+    scrapped = get_products_list(browser)
     with open(f"{naming}.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow([field.name for field in fields(Product)])
