@@ -9,6 +9,7 @@ from selenium.common import (
     NoSuchElementException,
     TimeoutException
 )
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -34,7 +35,9 @@ PRODUCT_FIELDS = fields(Product)
 def get_driver() -> WebDriver:
     global driver
     if not driver:
-        driver = webdriver.Chrome()
+        options = Options()
+        options.add_argument("--headless=new")
+        driver = webdriver.Chrome(options=options)
         return driver
     return driver
 
@@ -61,8 +64,7 @@ def get_page_product(element: WebElement) -> Product:
         ),
         num_of_reviews=int(
             review_count
-            .find_elements(By.TAG_NAME, "span")
-            .pop(0).text
+            .find_element(By.TAG_NAME, "span").text
         )
     )
 
