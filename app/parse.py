@@ -2,7 +2,6 @@ import csv
 import time
 from dataclasses import dataclass, fields, astuple
 from typing import List, Literal
-from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.common import (
     StaleElementReferenceException,
@@ -26,8 +25,6 @@ class Product:
     num_of_reviews: int
 
 
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 driver: WebDriver | None = None
 PRODUCT_FIELDS = fields(Product)
 
@@ -44,6 +41,12 @@ def get_driver() -> WebDriver:
 
 def get_page_product(element: WebElement) -> Product:
     review_count = element.find_element(By.CLASS_NAME, "review-count")
+    elements = review_count.find_elements(By.TAG_NAME, "span")
+
+    if elements:
+        num_of_reviews = int(elements[0].text)
+    else:
+        num_of_reviews = 0
 
     return Product(
         title=element
@@ -62,10 +65,7 @@ def get_page_product(element: WebElement) -> Product:
                 .find_elements(By.CLASS_NAME, "ws-icon-star")
                 )
         ),
-        num_of_reviews=int(
-            review_count
-            .find_element(By.TAG_NAME, "span").text
-        )
+        num_of_reviews=num_of_reviews
     )
 
 
