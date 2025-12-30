@@ -1,9 +1,9 @@
 import csv
 import time
 from dataclasses import dataclass, fields
-from typing import List, Dict
+from typing import List
 
-from tqdm import tqdm  # Optional task #2
+from tqdm import tqdm
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -14,7 +14,6 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 # Setup URL constants
 BASE_URL = "https://webscraper.io/test-sites/e-commerce/more"
 
-# Define the pages to scrape and their URL suffixes
 PAGES = {
     "home": "",
     "computers": "/computers",
@@ -35,24 +34,21 @@ class Product:
 def get_driver():
     """Initializes and returns a Selenium WebDriver with Headless options."""
     options = Options()
-    options.add_argument("--headless")  # Optional task #1
+    options.add_argument("--headless")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-blink-features=AutomationControlled")
     
-    # Initialize the driver (ensure you have chromedriver in PATH or use webdriver-manager)
     driver = webdriver.Chrome(options=options)
     return driver
 
 def accept_cookies(driver) -> None:
     """Checks for the cookie banner and accepts it if present."""
     try:
-        # Wait briefly for the cookie banner
         accept_button = WebDriverWait(driver, 3).until(
             EC.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
         )
         accept_button.click()
     except TimeoutException:
-        # Cookies banner didn't appear or was already accepted
         pass
 
 def write_to_csv(filename: str, products: List[Product]) -> None:
@@ -62,11 +58,9 @@ def write_to_csv(filename: str, products: List[Product]) -> None:
 
     with open(f"{filename}.csv", mode="w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        # Write header based on dataclass fields
         header = [field.name for field in fields(Product)]
         writer.writerow(header)
         
-        # Write rows
         for product in products:
             writer.writerow([
                 product.title,
@@ -82,14 +76,19 @@ def extract_product_data(product_element) -> Product:
     price_str = product_element.find_element(By.CLASS_NAME, "price").text
     description = product_element.find_element(By.CLASS_NAME, "description").text
     
-    # Rating is often hidden in class names or attributes (e.g., "rating-4")
-    # For this specific site, we count the stars
+    # Rating: Count the stars
     ratings = product_element.find_elements(By.CSS_SELECTOR, ".ratings .glyphicon-star")
     rating = len(ratings)
     
-    reviews_text = product_element.find_element(By.ClassName, "ratings").text
-    # Usually format is "X reviews", extract just the number
-    num_of_reviews = int(reviews_text.split()[0])
+    # --- FIX: Changed By.ClassName to By.CLASS_NAME ---
+    reviews_text = product_element.find_element(By.CLASS_NAME, "ratings").text
+    
+    # Extract just the number from "X reviews"
+    # Safety check in case text is empty or different format
+    try:
+        num_of_reviews = int(reviews_text.split()[0])
+    except (IndexError, ValueError):
+        num_of_reviews = 0
     
     # Clean price string ($123.45 -> 123.45)
     price = float(price_str.replace("$", ""))
@@ -103,44 +102,27 @@ def extract_product_data(product_element) -> Product:
     )
 
 def scrape_single_page(driver, url_suffix: str) -> List[Product]:
-    """
-    Global logic for parsing a single page including pagination ("More" button).
-    """
+    """Global logic for parsing a single page including pagination."""
     full_url = f"{BASE_URL}{url_suffix}"
     driver.get(full_url)
     
-    # Handle cookies once per page load to be safe
     accept_cookies(driver)
 
-    # --- Pagination Logic ---
     while True:
         try:
-            # Locate the "More" button
             more_button = driver.find_element(By.CLASS_NAME, "ecomerce-items-scroll-more")
             
-            # If button is hidden (style="display: none"), break the loop
             if not more_button.is_displayed():
                 break
 
-            # Click the button
             more_button.click()
-            
-            # Wait for new products to load. 
-            # We wait until the specific loading spinner/wrapper is gone or count increases.
-            # A simple sleep is often stable enough for this test site, 
-            # but WebDriverWait is better practice.
             time.sleep(0.5) 
             
         except (NoSuchElementException, ElementClickInterceptedException):
-            # Button doesn't exist or we reached the end
             break
         except Exception:
-            # Safety break to prevent infinite loops on errors
             break
 
-    # --- Data Extraction ---
-    # After pagination is done, all elements are in the DOM. 
-    # We collect them now to avoid StaleElementReferenceExceptions.
     product_elements = driver.find_elements(By.CLASS_NAME, "thumbnail")
     
     products = []
@@ -154,7 +136,6 @@ def get_all_products():
     driver = get_driver()
     
     try:
-        # Optional Task #2: Using tqdm for a progress bar
         iterator = tqdm(PAGES.items(), desc="Scraping Pages")
         
         for page_name, url_suffix in iterator:
