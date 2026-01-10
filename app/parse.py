@@ -5,7 +5,8 @@ from urllib.parse import urljoin
 
 import requests
 from selenium import webdriver
-from selenium.common import NoSuchElementException, TimeoutException
+from selenium.common import NoSuchElementException, TimeoutException, StaleElementReferenceException, \
+    ElementClickInterceptedException, ElementNotInteractableException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -20,6 +21,8 @@ LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops")
 TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets")
 TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
 
+MORE_BTN = "a.btn.btn-lg.btn-block.btn-primary.ecomerce-items-scroll-more"
+CARD = ".card"
 
 @dataclass
 class Product:
@@ -40,9 +43,10 @@ def accept_cookies_if_present(driver, timeout: int = 5) -> None:
         pass
 
 
-def get_more_products_html(url) -> Optional[str]:
+def get_more_products_html(url: str) -> str:
     driver = webdriver.Chrome()
-    wait = WebDriverWait(driver, 15)
+    page_wait = WebDriverWait(driver, 15)
+    more_wait = WebDriverWait(driver, 3)
 
     try:
         driver.get(url)
@@ -50,11 +54,26 @@ def get_more_products_html(url) -> Optional[str]:
 
         while True:
             try:
-                button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR,
-                                             "a.btn.btn-lg.btn-block.btn-primary.ecomerce-items-scroll-more")))
-                button.click()
+                cards_before = len(driver.find_elements(By.CSS_SELECTOR, CARD))
+
+                button = more_wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, MORE_BTN))
+                )
+
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
+
+                page_wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, MORE_BTN)))
+
+                driver.execute_script("arguments[0].click();", button)
+
+                page_wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, CARD)) > cards_before)
+
             except TimeoutException:
                 break
+            except (StaleElementReferenceException,
+                    ElementClickInterceptedException,
+                    ElementNotInteractableException):
+                continue
 
         return driver.page_source
     finally:
@@ -65,7 +84,7 @@ def parse_single_product(product: Tag) -> Product:
     title = product.select_one(".title")["title"]
     description = product.select_one(".description").text
     price = float(product.select_one(".price").text.replace("$", ""))
-    rating = int(product.select_one("p[data-rating]")["data-rating"])
+    rating = len(product.select(".ratings .ws-icon-star"))
     num_of_reviews = int(product.select_one(".review-count").text.split()[0])
 
     return Product(
@@ -82,37 +101,8 @@ def get_single_page_products(page_soup: Tag) -> List[Product]:
     return [parse_single_product(product) for product in products]
 
 
-def get_home_products() -> List[Product]:
-    text = requests.get(HOME_URL).text
-    soup = BeautifulSoup(text, "html.parser")
-    return get_single_page_products(soup)
-
-
-def get_computers_products() -> List[Product]:
-    text = requests.get(COMPUTERS_URL).text
-    soup = BeautifulSoup(text, "html.parser")
-    return get_single_page_products(soup)
-
-
-def get_phones_products() -> List[Product]:
-    text = requests.get(PHONES_URL).text
-    soup = BeautifulSoup(text, "html.parser")
-    return get_single_page_products(soup)
-
-
-def get_laptops_products() -> List[Product]:
-    html = get_more_products_html(LAPTOPS_URL)
-    soup = BeautifulSoup(html, "html.parser")
-    return get_single_page_products(soup)
-
-def get_tablets_products() -> List[Product]:
-    html = get_more_products_html(TABLETS_URL)
-    soup = BeautifulSoup(html, "html.parser")
-    return get_single_page_products(soup)
-
-
-def get_touch_products() -> List[Product]:
-    html = get_more_products_html(TOUCH_URL)
+def get_products(url: str) -> List[Product]:
+    html = get_more_products_html(url)
     soup = BeautifulSoup(html, "html.parser")
     return get_single_page_products(soup)
 
@@ -135,13 +125,12 @@ def writer(output_csv_path: str, func) -> None:
 
 
 def get_all_products() -> None:
-    writer("home.csv", get_home_products)
-    writer("computers.csv", get_computers_products)
-    writer("phones.csv", get_phones_products)
-    writer("laptops.csv", get_laptops_products)
-    writer("tablets.csv", get_tablets_products)
-    writer("touch.csv", get_touch_products)
-
+    writer("home.csv", lambda: get_products(HOME_URL))
+    writer("computers.csv", lambda: get_products(COMPUTERS_URL))
+    writer("phones.csv", lambda: get_products(PHONES_URL))
+    writer("laptops.csv", lambda: get_products(LAPTOPS_URL))
+    writer("tablets.csv", lambda: get_products(TABLETS_URL))
+    writer("touch.csv", lambda: get_products(TOUCH_URL))
 
 if __name__ == "__main__":
     get_all_products()
