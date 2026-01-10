@@ -1,12 +1,12 @@
 from urllib.parse import urljoin
 import csv
 from dataclasses import dataclass, fields, astuple
-import time
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 from selenium.common import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 
 BASE_URL = "https://webscraper.io/"
@@ -74,7 +74,7 @@ def get_all_products() -> None:
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
         products = soup.select(".product-wrapper.card-body")
-        product_objs = [parser_single_product(p) for p in products]
+        product_objs = [parse_single_product(p) for p in products]
 
         with open(filename, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
