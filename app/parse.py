@@ -73,7 +73,8 @@ def get_all_products() -> None:
                 break
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        products = soup.select(".product-wrapper.card-body")
+        #products = soup.select(".product-wrapper.card-body")
+        products = page_soup.select(".card-body")
         product_objs = [parse_single_product(p) for p in products]
 
         with open(filename, "w", newline="", encoding="utf-8") as f:
