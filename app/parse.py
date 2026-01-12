@@ -60,16 +60,7 @@ def click_more_until_end(driver: webdriver.Chrome) -> None:
             more_button = driver.find_element(By.CSS_SELECTOR, "a.ecomerce-items-scroll-more")
             if not more_button.is_displayed() or not more_button.is_enabled():
                 break
-            item_before = len(driver.find_elements(By.CSS_SELECTOR, "div.thumbnail"))
             more_button.click()
-            try:
-
-                WebDriverWait(driver, 5).until(
-                    lambda d: len(d.find_elements(By.CSS_SELECTOR, "div.thumbnail")) > item_before
-                )
-            except TimeoutException:
-
-                break
             time.sleep(0.2)
         except (NoSuchElementException, ElementNotInteractableException):
             break
@@ -121,7 +112,7 @@ def parse_products_from_page(driver: webdriver.Chrome) -> list[Product]:
             rating = len(stars)
 
         # num of reviews
-        reviews_text = card.find_element(By.CSS_SELECTOR, "span[itemprop='reviewCount']").text.strip()
+        reviews_text = card.find_element(By.CSS_SELECTOR, "p.review-count").text.strip()
         num_of_reviews = parse_review(reviews_text)
 
         products.append(
