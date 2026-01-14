@@ -7,25 +7,26 @@ from selenium.webdriver.remote.webelement import WebElement
 
 from app.logger.logger import logging
 
+
 class Scraper:
-    def __init__(self, driver: webdriver, home_url: str):
+    def __init__(self, driver: webdriver, home_url: str) -> None:
         self.driver = driver
         self.home_url = home_url
 
-    def get_products_from_root_url(self, url) -> list[dict]:
+    def get_products_from_root_url(self, url: str) -> list[dict]:
         """
         The main method gets the list of products by the given url,
         using other methods, returns a list of product dictionaries
         """
         logging.info("get_products_from_root_url  starting")
         cards = self.get_cards_from_page(url)
-        logging.info("cards found")
         products_data = []
         if cards:
             for card in tqdm(
-                    cards,
-                    total=len(cards),
-                    desc=f"scraping prices, ratings and reviews {url}"
+                cards,
+                total=len(cards),
+                desc=f"scraping prices, ratings and reviews {url}",
+                colour="green",
             ):
                 product_data: dict = self.get_product_data_from_card(card)
                 link_to_detail_page: str = self.get_link_to_product_page(card)
@@ -33,16 +34,16 @@ class Scraper:
                 products_data.append(product_data)
 
         for product_data in tqdm(
-                products_data,
-                total=len(products_data),
-                desc=f"scraping titles and descriptions {url}"
+            products_data,
+            total=len(products_data),
+            desc=f"scraping titles and descriptions {url}",
+            colour="blue",
         ):
             rest_of_product_data: dict = self.get_title_and_description(
                 product_data.pop("link_to_detail_page")
             )
             product_data.update(rest_of_product_data)
         return products_data
-
 
     @staticmethod
     def get_product_data_from_card(card: WebElement) -> dict:
@@ -84,7 +85,6 @@ class Scraper:
             product_data["num_of_reviews"] = 0
         return product_data
 
-
     def get_cards_from_page(self, url: str) -> list[WebElement] | None:
         """
         getting product cards from a web page
@@ -112,15 +112,14 @@ class Scraper:
 
         try:
             cards = self.driver.find_elements(By.CLASS_NAME, "product-wrapper")
-            logging.info(f"Success")
+            logging.info("Success")
             return cards
         except NoSuchElementException as e:
             logging.warning(f"Failed to get cards from {url}, excepted {e}")
             return None
 
     def get_link_to_product_page(self, card: list[WebElement]) -> str | None:
-        logging.info("get_link_to_product_page  starting")
-        logging.info(f"Getting links to products links")
+        logging.info("Getting links to products links")
         try:
             link = card.find_element(By.TAG_NAME, "a")
             url = link.get_attribute("href")

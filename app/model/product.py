@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields, astuple
+from dataclasses import dataclass, fields, astuple  # noqa
 
 
 @dataclass
@@ -8,5 +8,6 @@ class Product:
     price: float
     rating: int
     num_of_reviews: int
+
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]

@@ -34,8 +34,8 @@ def get_all_products() -> None:
 
         for path, url in tqdm(urls.items(), total=len(urls), desc="Total"):
             scraper = Scraper(web_driver, HOME_URL)
-            products_list_of_dicts: list[dict] = scraper.get_products_from_root_url(url)
-            products = [Product(**product) for product in products_list_of_dicts]
+            products_list: list[dict] = scraper.get_products_from_root_url(url)
+            products = [Product(**product) for product in products_list]
             write_items_to_csv(products, path)
 
 
