@@ -2,7 +2,6 @@ from app.scraper.scraper import Scraper
 from urllib.parse import urljoin
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from tqdm import tqdm
 
 from app.model.product import Product
 from app.csv_export.csv_exporter import write_items_to_csv
@@ -32,7 +31,7 @@ def get_all_products() -> None:
             "touch.csv": TOUCH_URL,
         }
 
-        for path, url in tqdm(urls.items(), total=len(urls), desc="Total"):
+        for path, url in urls.items():
             scraper = Scraper(web_driver, HOME_URL)
             products_list: list[dict] = scraper.get_products_from_root_url(url)
             products = [Product(**product) for product in products_list]
