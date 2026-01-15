@@ -94,6 +94,7 @@ class Scraper:
         logging.info("get_cards_from_page   starting")
         logging.info(f"Getting cards from {url}")
         self.driver.get(url)
+        self.accept_cookies()
         counter = 0
         while True:
             try:
@@ -149,3 +150,12 @@ class Scraper:
                 f"Failed to get description on page {url}, default value ''")
             product_data["description"] = ""
         return product_data
+
+    def accept_cookies(self):
+        try:
+            button = self.driver.find_element(
+                By.XPATH, "//button[contains(text(), 'Accept')]"
+            )
+            button.click()
+        except NoSuchElementException:
+            pass
