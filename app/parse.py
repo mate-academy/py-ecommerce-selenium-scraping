@@ -30,9 +30,9 @@ def get_all_products() -> None:
             "phones.csv": PHONES_URL,
             "touch.csv": TOUCH_URL,
         }
+        scraper = Scraper(web_driver, HOME_URL)
 
         for path, url in urls.items():
-            scraper = Scraper(web_driver, HOME_URL)
             products_list: list[dict] = scraper.get_products_from_root_url(url)
             products = [Product(**product) for product in products_list]
             write_items_to_csv(products, path)
