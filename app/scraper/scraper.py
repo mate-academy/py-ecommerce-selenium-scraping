@@ -1,9 +1,11 @@
 from urllib.parse import urljoin
 from tqdm import tqdm
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions
 
 from app.logger.logger import logging
 
@@ -95,29 +97,31 @@ class Scraper:
         logging.info(f"Getting cards from {url}")
         self.driver.get(url)
         self.accept_cookies()
-        counter = 0
-        while True:
-            try:
-                more_button = self.driver.find_element(
-                    By.CLASS_NAME,
-                    "ecomerce-items-scroll-more"
-                )
-                if more_button.is_displayed():
-                    counter += 1
-                    more_button.click()
-                    logging.info(f"Got more button: {counter}")
-                else:
-                    break
-            except NoSuchElementException:
-                break
+        wait = WebDriverWait(self.driver, 5)
 
-        try:
+        while True:
             cards = self.driver.find_elements(By.CLASS_NAME, "product-wrapper")
-            logging.info("Success")
-            return cards
-        except NoSuchElementException as e:
-            logging.warning(f"Failed to get cards from {url}, excepted {e}")
-            return None
+            prev_count = len(cards)
+
+            try:
+                more_button = wait.until(
+                    expected_conditions.element_to_be_clickable(
+                        (By.CLASS_NAME, "ecomerce-items-scroll-more")
+                    )
+                )
+                more_button.click()
+
+                wait.until(
+                    lambda d: any((
+                        len(d.find_elements(By.CLASS_NAME,
+                                            "product-wrapper")) > prev_count,
+                        not more_button.is_displayed(),
+                    ))
+                )
+            except (NoSuchElementException, TimeoutException):
+                logging.info("No more products to load")
+                break
+        return cards
 
     def get_link_to_product_page(self, card: list[WebElement]) -> str | None:
         logging.info("Getting links to products links")
@@ -151,11 +155,12 @@ class Scraper:
             product_data["description"] = ""
         return product_data
 
-    def accept_cookies(self):
+    def accept_cookies(self) -> None:
         try:
             button = self.driver.find_element(
                 By.XPATH, "//button[contains(text(), 'Accept')]"
             )
-            button.click()
+            if button.is_displayed():
+                button.click()
         except NoSuchElementException:
             pass
