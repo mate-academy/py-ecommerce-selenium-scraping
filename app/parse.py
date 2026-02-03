@@ -101,7 +101,7 @@ def scrape_all_pages(driver: webdriver) -> dict[str, list[Product]]:
 def write_to_csv(all_products: dict[str, list[Product]]) -> None:
     for page_name, products in all_products.items():
         print(f"Writing to {page_name.lower()}.csv")
-        with open(f"{page_name}.csv", "w", encoding="utf-8", newline="") as f:
+        with open(f"{page_name.lower()}.csv", "w", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(PRODUCT_FIELDS)
             writer.writerows([astuple(product) for product in products])
@@ -117,7 +117,7 @@ def get_all_products() -> None:
     all_products = scrape_all_pages(driver)
     write_to_csv(all_products)
 
-    driver.close()
+    driver.quit()
 
 
 if __name__ == "__main__":
