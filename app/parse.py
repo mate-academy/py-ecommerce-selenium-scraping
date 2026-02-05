@@ -10,11 +10,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 
 # URLs
-BASE_URL = "https://webscraper.io/test-sites/e-commerce/more/"
+BASE_URL = "https://webscraper.io/test-sites/e-commerce/"
 CATEGORIES = {
-    "laptops": urljoin(BASE_URL, "computers/laptops"),
-    "tablets": urljoin(BASE_URL, "computers/tablets"),
-    "touch": urljoin(BASE_URL, "phones/touch"),
+    "laptops": urljoin(BASE_URL, "more/computers/laptops"),
+    "tablets": urljoin(BASE_URL, "more/computers/tablets"),
+    "touch": urljoin(BASE_URL, "more/phones/touch"),
+    "home": urljoin(BASE_URL, "more"),
+    "phones": urljoin(BASE_URL, "more/phones"),
+    "computers": urljoin(BASE_URL, "more/computers"),
+
 }
 
 
@@ -37,7 +41,7 @@ def parse_single_product(product: Tag) -> Product:
     rating = len(ratings)
 
     num_of_reviews = int(
-        product.select_one(".ratings .pull-right").text.split()[0]
+        product.select_one('[itemprop="reviewCount"]').text
     )
 
     price = float(
@@ -87,6 +91,9 @@ def write_csv(products: list[Product], filename: str) -> None:
 
 def scrape_category(driver: WebDriver, name: str, url: str) -> None:
     driver.get(url)
+    accept_buttons = driver.find_elements(By.CLASS_NAME, "acceptCookies")
+    if accept_buttons:
+        accept_buttons[0].click()
     click_more(driver)
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
