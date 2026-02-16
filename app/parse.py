@@ -16,7 +16,7 @@ COMPUTERS_URL = urljoin(HOME_URL, "computers/")
 LAPTOPS_URL = urljoin(COMPUTERS_URL, "laptops")
 TABLETS_URL = urljoin(COMPUTERS_URL, "tablets")
 PHONES_URL = urljoin(HOME_URL, "phones/")
-TOUCh_URL = urljoin(PHONES_URL, "touch")
+TOUCH_URL = urljoin(PHONES_URL, "touch")
 
 
 @dataclass
@@ -36,7 +36,7 @@ FILE_COLLECTION = {
     "laptops": "laptops.csv",
     "tablets": "tablets.csv",
     "phones": "phones.csv",
-    "touches": "touch.csv",
+    "touch": "touch.csv",
 }
 
 
@@ -82,6 +82,9 @@ def scrap_single_page(driver: webdriver.Chrome, url: str) -> list[Product]:
     driver.get(url)
     wait = WebDriverWait(driver, 5)
 
+    cookie_btn = driver.find_element(By.CLASS_NAME, "acceptCookies")
+    cookie_btn.click()
+
     try:
         wait.until(
             ec.presence_of_element_located((By.CLASS_NAME, "card-body")))
@@ -113,7 +116,11 @@ def scrap_single_page(driver: webdriver.Chrome, url: str) -> list[Product]:
     product_cards = driver.find_elements(By.CLASS_NAME, "card-body")
     print(f"Finished loading {url}. Total items: {len(product_cards)}")
 
-    return [create_product(card) for card in product_cards]
+    return [
+        create_product(card)
+        for card in product_cards
+        if create_product(card)
+    ]
 
 
 def write_products_to_csv(products: list[Product], file_name: str) -> None:
@@ -153,9 +160,11 @@ def get_all_products() -> None:
         file_name=FILE_COLLECTION["phones"]
     )
     write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=TOUCh_URL),
-        file_name=FILE_COLLECTION["touches"]
+        products=scrap_single_page(driver=driver, url=TOUCH_URL),
+        file_name=FILE_COLLECTION["touch"]
     )
+
+    driver.close()
 
 
 if __name__ == "__main__":
