@@ -32,6 +32,9 @@ class DriverManager:
             cls._driver = webdriver.Chrome(options=options)
         return cls._driver
 
+    @classmethod
+    def quit(cls) -> None:
+        cls._driver.quit()
 
 class UrlEnum(StrEnum):
     HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -96,7 +99,6 @@ def _handle_more_button() -> None:
                 )
             )
             more_button.click()
-            WebDriverWait(driver, 1)
 
     except (
             TimeoutException,
@@ -162,8 +164,9 @@ product_name_map = {
 def get_all_products() -> None:
     for product_url in tqdm(UrlEnum.list(), desc="scraping products"):
         specific_products = get_specific_products(product_url)
-        filename = str(BASE_DIR / product_name_map.get(product_url))
+        filename = str(BASE_DIR / product_name_map[product_url])
         write_to_file(filename, specific_products)
+    DriverManager.quit()
 
 
 if __name__ == "__main__":
