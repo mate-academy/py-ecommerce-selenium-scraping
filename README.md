@@ -1,39 +1,38 @@
-# Ecommerce selenium scraping
+# Электронная коммерция селенового скребка
 
-- Read [the guideline](https://github.com/mate-academy/py-task-guideline/blob/main/README.md) before start
+- Ознакомьтесь с [руководством](https://github.com/mate-academy/py-task-guideline/blob/main/README.md) перед началом работы
 
+## Задание
 
-## Task
+На этот раз вы реализуете скрейпер для [E-commerce test-site](https://webscraper.io/test-sites/e-commerce/more/).
+Да, похожий на тот сайт в видео, но с некоторыми «дополнительными» изменениями.
+Во-первых, нужно собрать и проанализировать информацию обо всех продуктах и всех страницах.
 
-This time you will implement the scraper for [E-commerce test-site](https://webscraper.io/test-sites/e-commerce/more/).
-Yep, the similar one to that site in the video, but with some `more` changes.
-Firstly - you need to scrape & parse info about all products and all pages.
+Следующий список страниц:
+- страница [домашняя](https://webscraper.io/test-sites/e-commerce/more) (3 случайных продукта);
+- страница [компьютеры](https://webscraper.io/test-sites/e-commerce/more/computers) (3 случайных компьютера);
+- страница [ноутбуки](https://webscraper.io/test-sites/e-commerce/more/computers/laptops) (117 ноутбуков) с пагинацией «больше кнопок»;
+- [планшеты](https://webscraper.io/test-sites/e-commerce/more/computers/tablets) страница (21 планшет) с пагинацией «больше кнопок»;
+- страница [телефоны](https://webscraper.io/test-sites/e-commerce/more/phones) (3 случайных телефона);
+- [Touch](https://webscraper.io/test-sites/e-commerce/more/phones/touch) страница (9 сенсорных телефонов) с пагинацией «больше кнопок».
 
-The list of pages is next:
-- [home](https://webscraper.io/test-sites/e-commerce/more) page (3 random products);
-- [computers](https://webscraper.io/test-sites/e-commerce/more/computers) page (3 random computers);
-- [laptops](https://webscraper.io/test-sites/e-commerce/more/computers/laptops) page (117 laptops) with `more button` pagination;
-- [tablets](https://webscraper.io/test-sites/e-commerce/more/computers/tablets) page (21 tablets) with `more button` pagination;
-- [phones](https://webscraper.io/test-sites/e-commerce/more/phones) page (3 random phones);
-- [touch](https://webscraper.io/test-sites/e-commerce/more/phones/touch) page (9 touch phones) with `more button` pagination.
+Все эти страницы должны быть удалены, а содержимое товаров — в соответствующем файле '.csv'.
+Например, результаты для «главной страницы» -> «home.csv», «сенсорная страница» -> «touch.csv».
+Конечно, на тех же страницах есть случайные продукты, поэтому тесты проверяют содержимое только трёх постоянных страниц.
+В 'app/parse.py' есть шаблон классов для 'Product'.
 
-All of these pages should be scraped & content of products should be written in corresponding `.csv` file.
-For ex. results for `home page` -> `home.csv`, `touch page` -> `touch.csv`.
-Of course, on same pages there are random products, so the tests will only check content of 3 constant pages.
-There are classes template for `Product` in `app/parse.py`.
+Итак, ваша задача — реализовать функцию 'get_all_products', которая сохранит все 6 
+страницы в соответствующие файлы '.csv' с корректными данными о продукте.
 
-So, your task is to implement `get_all_products` function, which will save all 6 
-pages to corresponding `.csv` files with correct product data.
+### Необязательное задание
+1. Запускайте Selenium без открытия браузера;
+2. Добавьте комплексные аннотации к процессу.
 
-### Optional Task
-1. Run Selenium without opening a browser;
-2. Add comprehensive process annotations.
-
-Hints:
-- Do not copy-paste the code for different pages scraping;
-- Write the global logic for parsing the single page;
-- Be aware of `accept cookies` button, while developing, possible fix - just to click it, when it appears;
-- Sometimes, you need to wait a bit, while your driver is acting after some event;
-- Make your code as clean as possible;
-- Optional task №1: read about **"headless"** mode;
-- Optional task №2: read about **tqdm** library.
+Подсказки:
+- Не копировать и вставлять код для скрейпинга разных страниц;
+- Написать глобальную логику для разбора одной страницы;
+- Обратите внимание на кнопку «принять cookie» при разработке, возможное исправление — просто нажать на неё, когда она появится;
+- Иногда нужно немного подождать, пока водитель действует после какого-то события;
+- Сделать ваш код максимально чистым;
+- Необязательное задание No1: почитайте о режиме **"headless"**;
+- Необязательное задание No2: ознакомьтесь с библиотекой **tqdm**.
