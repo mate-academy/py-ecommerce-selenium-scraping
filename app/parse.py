@@ -1,5 +1,6 @@
 import csv
 from dataclasses import dataclass, asdict
+from typing import Any
 from urllib.parse import urljoin
 
 from selenium import webdriver
@@ -19,8 +20,6 @@ TABLETS_URL = urljoin(COMPUTER_PAGE_URL, "tablets")
 PHONES_URL = urljoin(HOME_URL, "phones/")
 TOUCH_URL = urljoin(PHONES_URL, "touch")
 
-driver = webdriver.Chrome()
-
 
 @dataclass
 class Product:
@@ -31,7 +30,7 @@ class Product:
     num_of_reviews: int
 
 
-def all_more() -> None:
+def all_more(driver: Any) -> None:
     while True:
         try:
             button = driver.find_element(
@@ -63,7 +62,7 @@ def parce_single_product(product: WebElement) -> Product:
     return Product(title, description, price, rating, num_of_reviews)
 
 
-def parce_single_page(url: str, filename: str) -> None:
+def parce_single_page(driver: Any, url: str, filename: str) -> None:
     driver.get(url)
 
     try:
@@ -73,12 +72,15 @@ def parce_single_page(url: str, filename: str) -> None:
     except (NoSuchElementException, ElementClickInterceptedException):
         pass
 
-    all_more()
+    all_more(driver)
 
     products = driver.find_elements(By.CLASS_NAME, "product-wrapper")
-    parsed_products = []
-    for product in products:
-        parsed_products.append(parce_single_product(product))
+
+    if not products:
+        print(f"No products found on {url}")
+        return
+
+    parsed_products = [parce_single_product(p) for p in products]
 
     with open(filename, "w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
@@ -90,12 +92,13 @@ def parce_single_page(url: str, filename: str) -> None:
 
 
 def get_all_products() -> None:
-    parce_single_page(HOME_URL, "home.csv")
-    parce_single_page(COMPUTER_PAGE_URL, "computers.csv")
-    parce_single_page(LAPTOPS_URL, "laptops.csv")
-    parce_single_page(TABLETS_URL, "tablets.csv")
-    parce_single_page(PHONES_URL, "phones.csv")
-    parce_single_page(TOUCH_URL, "touch.csv")
+    with webdriver.Chrome() as driver:
+        parce_single_page(driver, HOME_URL, "home.csv")
+        parce_single_page(driver, COMPUTER_PAGE_URL, "computers.csv")
+        parce_single_page(driver, LAPTOPS_URL, "laptops.csv")
+        parce_single_page(driver, TABLETS_URL, "tablets.csv")
+        parce_single_page(driver, PHONES_URL, "phones.csv")
+        parce_single_page(driver, TOUCH_URL, "touch.csv")
 
 
 if __name__ == "__main__":
