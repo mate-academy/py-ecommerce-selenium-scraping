@@ -34,7 +34,10 @@ class DriverManager:
 
     @classmethod
     def quit(cls) -> None:
-        cls._driver.quit()
+        if cls._driver is not None:
+            cls._driver.quit()
+            cls._driver = None
+
 
 class UrlEnum(StrEnum):
     HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -80,7 +83,7 @@ def _handle_accept_cookies_message() -> None:
     sec = 3
     try:
         cookie_accept_message = WebDriverWait(driver, sec).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "acceptCookies"))
+            EC.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
         )
         cookie_accept_message.click()
 
@@ -93,12 +96,20 @@ def _handle_more_button() -> None:
     sec = 3
     try:
         while True:
+            initial_count = len(
+                driver.find_elements(By.CLASS_NAME, "card-body")
+            )
             more_button = WebDriverWait(driver, sec).until(
                 EC.element_to_be_clickable(
                     (By.CLASS_NAME, "ecomerce-items-scroll-more")
                 )
             )
             more_button.click()
+            WebDriverWait(driver, sec).until(
+                lambda d: len(
+                    d.find_elements(By.CLASS_NAME, "card-body")
+                ) > initial_count
+            )
 
     except (
             TimeoutException,
@@ -162,11 +173,13 @@ product_name_map = {
 
 
 def get_all_products() -> None:
-    for product_url in tqdm(UrlEnum.list(), desc="scraping products"):
-        specific_products = get_specific_products(product_url)
-        filename = str(BASE_DIR / product_name_map[product_url])
-        write_to_file(filename, specific_products)
-    DriverManager.quit()
+    try:
+        for product_url in tqdm(UrlEnum.list(), desc="scraping products"):
+            specific_products = get_specific_products(product_url)
+            filename = str(BASE_DIR / product_name_map[product_url])
+            write_to_file(filename, specific_products)
+    finally:
+        DriverManager.quit()
 
 
 if __name__ == "__main__":
