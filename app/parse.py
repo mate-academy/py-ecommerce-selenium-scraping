@@ -93,7 +93,7 @@ def parse_product(product_element):
 
 def scrape_page(url, output_file):
     """Scrape a single page and save to CSV"""
-    driver = setup_driver(headless=False)
+    driver = setup_driver(headless=True)
     products = []
 
     try:
@@ -106,7 +106,7 @@ def scrape_page(url, output_file):
         )
 
         for element in product_elements:
-            product = parse_product(element, driver)
+            product = parse_product(element)
             if product:
                 products.append(product)
 
