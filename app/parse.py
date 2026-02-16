@@ -50,7 +50,7 @@ def all_more(driver: Any) -> None:
             break
 
 
-def parce_single_product(product: WebElement) -> Product:
+def parse_single_product(product: WebElement) -> Product:
     title = product.find_element(By.CLASS_NAME, "title").get_attribute("title")
     description = product.find_element(By.CLASS_NAME, "description").text
     price = float(product.find_element(By.CLASS_NAME, "price").text[1:])
@@ -62,7 +62,7 @@ def parce_single_product(product: WebElement) -> Product:
     return Product(title, description, price, rating, num_of_reviews)
 
 
-def parce_single_page(driver: Any, url: str, filename: str) -> None:
+def parse_single_page(driver: Any, url: str, filename: str) -> None:
     driver.get(url)
 
     try:
@@ -80,7 +80,7 @@ def parce_single_page(driver: Any, url: str, filename: str) -> None:
         print(f"No products found on {url}")
         return
 
-    parsed_products = [parce_single_product(p) for p in products]
+    parsed_products = [parse_single_product(p) for p in products]
 
     with open(filename, "w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
@@ -93,12 +93,12 @@ def parce_single_page(driver: Any, url: str, filename: str) -> None:
 
 def get_all_products() -> None:
     with webdriver.Chrome() as driver:
-        parce_single_page(driver, HOME_URL, "home.csv")
-        parce_single_page(driver, COMPUTER_PAGE_URL, "computers.csv")
-        parce_single_page(driver, LAPTOPS_URL, "laptops.csv")
-        parce_single_page(driver, TABLETS_URL, "tablets.csv")
-        parce_single_page(driver, PHONES_URL, "phones.csv")
-        parce_single_page(driver, TOUCH_URL, "touch.csv")
+        parse_single_page(driver, HOME_URL, "home.csv")
+        parse_single_page(driver, COMPUTER_PAGE_URL, "computers.csv")
+        parse_single_page(driver, LAPTOPS_URL, "laptops.csv")
+        parse_single_page(driver, TABLETS_URL, "tablets.csv")
+        parse_single_page(driver, PHONES_URL, "phones.csv")
+        parse_single_page(driver, TOUCH_URL, "touch.csv")
 
 
 if __name__ == "__main__":
