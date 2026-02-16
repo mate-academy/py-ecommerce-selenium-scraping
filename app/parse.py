@@ -31,12 +31,12 @@ class Product:
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
 
 FILE_COLLECTION = {
-    "home": "home.csv",
-    "computers": "computers.csv",
-    "laptops": "laptops.csv",
-    "tablets": "tablets.csv",
-    "phones": "phones.csv",
-    "touch": "touch.csv",
+    "home.csv": HOME_URL,
+    "computers.csv": COMPUTERS_URL,
+    "laptops.csv": LAPTOPS_URL,
+    "tablets.csv": TABLETS_URL,
+    "phones.csv": PHONES_URL,
+    "touch.csv": TOUCH_URL,
 }
 
 
@@ -82,8 +82,11 @@ def scrap_single_page(driver: webdriver.Chrome, url: str) -> list[Product]:
     driver.get(url)
     wait = WebDriverWait(driver, 5)
 
-    cookie_btn = driver.find_element(By.CLASS_NAME, "acceptCookies")
-    cookie_btn.click()
+    try:
+        cookie_btn = driver.find_element(By.CLASS_NAME, "acceptCookies")
+        cookie_btn.click()
+    except Exception:
+        print(f"No cookies found on {url}. Skipping.")
 
     try:
         wait.until(
@@ -116,11 +119,8 @@ def scrap_single_page(driver: webdriver.Chrome, url: str) -> list[Product]:
     product_cards = driver.find_elements(By.CLASS_NAME, "card-body")
     print(f"Finished loading {url}. Total items: {len(product_cards)}")
 
-    return [
-        create_product(card)
-        for card in product_cards
-        if create_product(card)
-    ]
+    products = (create_product(card) for card in product_cards)
+    return [p for p in products if p]
 
 
 def write_products_to_csv(products: list[Product], file_name: str) -> None:
@@ -133,38 +133,19 @@ def write_products_to_csv(products: list[Product], file_name: str) -> None:
 def get_all_products() -> None:
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-
     driver = webdriver.Chrome(
         service=Service(ChromeDriverManager().install()),
         options=options
     )
 
-    write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=HOME_URL),
-        file_name=FILE_COLLECTION["home"]
-    )
-    write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=COMPUTERS_URL),
-        file_name=FILE_COLLECTION["computers"]
-    )
-    write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=LAPTOPS_URL),
-        file_name=FILE_COLLECTION["laptops"]
-    )
-    write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=TABLETS_URL),
-        file_name=FILE_COLLECTION["tablets"]
-    )
-    write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=PHONES_URL),
-        file_name=FILE_COLLECTION["phones"]
-    )
-    write_products_to_csv(
-        products=scrap_single_page(driver=driver, url=TOUCH_URL),
-        file_name=FILE_COLLECTION["touch"]
-    )
-
-    driver.close()
+    try:
+        for file_name, url in FILE_COLLECTION.items():
+            write_products_to_csv(
+                products=scrap_single_page(driver=driver, url=url),
+                file_name=file_name
+            )
+    finally:
+        driver.quit()
 
 
 if __name__ == "__main__":
