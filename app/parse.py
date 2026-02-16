@@ -15,7 +15,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as EC  # noqa
 from selenium.webdriver.support.ui import WebDriverWait
 from tqdm import tqdm
 from webdriver_manager.chrome import ChromeDriverManager
@@ -126,9 +126,9 @@ def parse_product_card(card_element: WebElement) -> Product | None:
             ratings_container = card_element.find_element(By.CLASS_NAME,
                                                           "ratings")
             paragraphs = ratings_container.find_elements(By.TAG_NAME, "p")
-            for p in paragraphs:
-                if "reviews" in p.text:
-                    num_of_reviews = int(p.text.split()[0])
+            for paragraph in paragraphs:
+                if "reviews" in paragraph.text:
+                    num_of_reviews = int(paragraph.text.split()[0])
                     break
         except Exception:
             pass
