@@ -20,13 +20,6 @@ TABLETS_URL = urljoin(HOME_URL, "computers/tablets")
 PHONES_URL = urljoin(HOME_URL, "phones")
 TOUCHES_URL = urljoin(HOME_URL, "phones/touch")
 
-options = Options()
-options.add_argument("--headless")
-options.add_argument("--window-size=1920,1080")
-options.add_argument("--disable-gpu")
-
-_driver = webdriver.Chrome(options=options)
-
 
 @dataclass
 class Product:
@@ -37,19 +30,9 @@ class Product:
     num_of_reviews: int
 
 
-def get_driver(url: str) -> WebDriver:
-    _driver.get(url)
-
-    return _driver
-
-
-def close_driver() -> None:
-    _driver.quit()
-
-
-def get_page_data(url: str) -> list[Product]:
+def get_page_data(driver: WebDriver, url: str) -> list[Product]:
     products = []
-    driver = get_driver(url=url)
+    driver.get(url)
 
     try:
         cookie_button = driver.find_element(By.CLASS_NAME, "acceptCookies")
@@ -83,7 +66,9 @@ def get_page_data(url: str) -> list[Product]:
         price_text = wrapper.find_element(By.CLASS_NAME, "price").text
         price = float(price_text.replace("$", ""))
 
-        rating = len(wrapper.find_elements(By.CSS_SELECTOR, "span.ws-icon-star")) # noqa
+        rating = len(
+            wrapper.find_elements(By.CSS_SELECTOR, "span.ws-icon-star")
+        )  # noqa
 
         reviews_text = wrapper.find_element(
             By.CSS_SELECTOR, ".ratings [itemprop='reviewCount']"
@@ -104,17 +89,22 @@ def get_page_data(url: str) -> list[Product]:
 
 
 def get_all_products() -> None:
-    try:
-        pages_names = {
-            "home.csv": get_page_data(HOME_URL),
-            "computer.csv": get_page_data(COMPUTERS_URL),
-            "laptop.csv": get_page_data(LAPTOPS_URL),
-            "tablet.csv": get_page_data(TABLETS_URL),
-            "phone.csv": get_page_data(PHONES_URL),
-            "touch.csv": get_page_data(TOUCHES_URL),
-        }
-    finally:
-        close_driver()
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--disable-gpu")
+
+    driver = webdriver.Chrome(options=options)
+    pages_names = {
+        "home.csv": get_page_data(driver, HOME_URL),
+        "computers.csv": get_page_data(driver, COMPUTERS_URL),
+        "laptops.csv": get_page_data(driver, LAPTOPS_URL),
+        "tablets.csv": get_page_data(driver, TABLETS_URL),
+        "phones.csv": get_page_data(driver, PHONES_URL),
+        "touch.csv": get_page_data(driver, TOUCHES_URL),
+    }
+
+    driver.quit()
 
     for file_name, products in pages_names.items():
         with open(file_name, "w", encoding="utf-8", newline="") as file:
