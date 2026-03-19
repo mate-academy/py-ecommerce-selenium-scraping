@@ -87,9 +87,7 @@ def _load_all_products(driver: webdriver.Chrome) -> list[Product]:
     while True:
         try:
             more_button = wait.until(
-                expected_conditions.element_to_be_clickable(
-                    (By.CLASS_NAME, "btn-primary")
-                )
+                expected_conditions.element_to_be_clickable((By.ID, "more"))
             )
             driver.execute_script("arguments[0].click();", more_button)
         except Exception:
