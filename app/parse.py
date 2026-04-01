@@ -1,8 +1,10 @@
 import csv
 import logging
+import sys
 from dataclasses import dataclass, fields, astuple
 from urllib.parse import urljoin
 
+from selenium.common import TimeoutException
 from tqdm import tqdm
 from bs4 import Tag, BeautifulSoup
 from selenium import webdriver
@@ -17,7 +19,14 @@ SHORT_WAIT = 2
 LONG_WAIT = 3
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)8s]: %(message)s",
+    handlers=[
+        logging.FileHandler("parser.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
 logger = logging.getLogger(__name__)
 
 
@@ -36,11 +45,10 @@ PRODUCT_FIELDS = [field.name for field in fields(Product)]
 def parse_single_product(product: Tag) -> Product:
     return Product(
         title=product.select_one(".title")["title"],
-        description=product.select_one(
-            ".description").text.replace("\xa0", " "),
+        description=product.select_one(".description").text.replace("\xa0", " "),
         price=float(product.select_one(".price").text.replace("$", "")),
         rating=len(product.select(".ws-icon-star")),
-        num_of_reviews=int(product.select_one(".review-count").text.split()[0])
+        num_of_reviews=int(product.select_one(".review-count").text.split()[0]),
     )
 
 
@@ -52,13 +60,12 @@ def get_driver() -> WebDriver:
 
 def accept_cookies(driver: WebDriver) -> None:
     try:
-        WebDriverWait(driver, 2).until(
-            ec.element_to_be_clickable(
-                (By.CLASS_NAME, "acceptCookies")
-            )
+        WebDriverWait(driver, SHORT_WAIT).until(
+            ec.element_to_be_clickable((By.CLASS_NAME, "acceptCookies"))
         ).click()
-    except Exception:
-        pass
+        logger.info("Cookies accepted")
+    except TimeoutException:
+        logger.info("Cookie banner was not shown")
 
 
 def get_single_page_products(driver: WebDriver, url: str) -> list[Product]:
@@ -67,9 +74,10 @@ def get_single_page_products(driver: WebDriver, url: str) -> list[Product]:
 
     while True:
         try:
-            more_button = WebDriverWait(driver, 3).until(
+            more_button = WebDriverWait(driver, LONG_WAIT).until(
                 ec.element_to_be_clickable(
-                    (By.CLASS_NAME, "ecomerce-items-scroll-more"))
+                    (By.CLASS_NAME, "ecomerce-items-scroll-more")
+                )
             )
             more_button.click()
         except Exception:
@@ -88,6 +96,7 @@ def write_products_to_csv(products: list[Product], filename: str) -> None:
         writer.writerow(PRODUCT_FIELDS)
         writer.writerows([astuple(product) for product in products])
 
+
 def get_all_products() -> None:
     pages = [
         (HOME_URL, "home.csv"),
@@ -99,8 +108,10 @@ def get_all_products() -> None:
     ]
     with get_driver() as driver:
         for url, filename in tqdm(pages, desc="Scraping products"):
+            logger.info("Scraping %s -> %s", url, filename)
             products = get_single_page_products(driver, url)
             write_products_to_csv(products, filename)
+            logger.info("Finished scraping %s -> %s", url, filename)
 
 
 if __name__ == "__main__":
