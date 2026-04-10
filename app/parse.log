@@ -1,0 +1,6 @@
+[    INFO]:  Parsing home page using requests
+[    INFO]:  Parsing computers page using requests
+[    INFO]:  Parsing phones page using requests
+[    INFO]:  Parsing laptops page using Selenium
+[    INFO]:  Parsing tablets page using Selenium
+[    INFO]:  Parsing touch page using Selenium
