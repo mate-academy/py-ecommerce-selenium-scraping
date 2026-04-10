@@ -32,10 +32,6 @@ PHONES_URL = urljoin(HOME_URL, "phones/")
 TOUCH_URL = urljoin(PHONES_URL, "touch/")
 
 
-class HasMoreButtonError(Exception):
-    pass
-
-
 @dataclass
 class Product:
     title: str
@@ -171,21 +167,29 @@ def get_products_from_page(driver: WebDriver) -> list[Product]:
 
 
 def parse_dynamic_page(
-        category: str,
-        subcategory: str
+    category: str,
+    subcategory: str
 ) -> list[Product]:
+
+    if not category or not subcategory:
+        raise ValueError(
+            "Category and subcategory must be provided"
+        )
+
     driver = create_driver()
-    driver.get(HOME_URL)
 
-    handle_cookies(driver)
+    try:
+        driver.get(HOME_URL)
 
-    navigate_to_category(driver, category, subcategory)
-    load_all_products(driver)
+        handle_cookies(driver)
 
-    products = get_products_from_page(driver)
+        navigate_to_category(driver, category, subcategory)
+        load_all_products(driver)
 
-    driver.quit()
-    return products
+        return get_products_from_page(driver)
+
+    finally:
+        driver.quit()
 
 
 def parse_static_page(url: str) -> list[Product]:
@@ -210,15 +214,15 @@ def has_more_button(url: str) -> bool:
             return True
 
     except requests.RequestException as e:
-        raise HasMoreButtonError(
-            f"Failed to fetch page '{url}' via requests: {e}"
-        ) from e
+        print(f"[WARNING] Request failed for {url}: {e}")
 
     driver = create_driver()
     try:
         driver.get(url)
 
-        WebDriverWait(driver, 3).until(
+        handle_cookies(driver)
+
+        WebDriverWait(driver, 5).until(
             ec.presence_of_element_located(
                 (By.CLASS_NAME, "ecomerce-items-scroll-more")
             )
@@ -227,11 +231,6 @@ def has_more_button(url: str) -> bool:
 
     except TimeoutException:
         return False
-
-    except Exception as e:
-        raise HasMoreButtonError(
-            f"Selenium fallback failed for '{url}': {e}"
-        ) from e
 
     finally:
         driver.quit()
