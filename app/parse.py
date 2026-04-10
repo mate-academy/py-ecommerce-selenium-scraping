@@ -8,6 +8,10 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup, Tag
 
 from selenium import webdriver
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    ElementNotInteractableException
+)
 from selenium.common import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -26,6 +30,10 @@ TABLETS_URL = urljoin(COMPUTERS_URL, "tablets/")
 
 PHONES_URL = urljoin(HOME_URL, "phones/")
 TOUCH_URL = urljoin(PHONES_URL, "touch/")
+
+
+class HasMoreButtonError(Exception):
+    pass
 
 
 @dataclass
@@ -99,22 +107,38 @@ def create_driver() -> webdriver.Chrome:
     return webdriver.Chrome(options=options)
 
 
+def handle_cookies(driver: WebDriver) -> None:
+    try:
+        btn = WebDriverWait(driver, 5).until(
+            ec.element_to_be_clickable(
+                (By.CSS_SELECTOR, "[data-tid*='cookie']")
+            )
+        )
+        safe_click(driver, btn)
+    except TimeoutException:
+        pass
+
+
 def safe_click(driver: WebDriver, element: WebElement) -> None:
     try:
         element.click()
-    except Exception:
+    except (ElementClickInterceptedException, ElementNotInteractableException):
         driver.execute_script("arguments[0].click();", element)
 
 
 def navigate_to_category(
-    driver: WebDriver,
-    category: str,
-    subcategory: str
+        driver: WebDriver,
+        category: str,
+        subcategory: str
 ) -> None:
+    handle_cookies(driver)
+
     category_link = WebDriverWait(driver, 5).until(
         ec.element_to_be_clickable((By.LINK_TEXT, category))
     )
     safe_click(driver, category_link)
+
+    handle_cookies(driver)
 
     subcategory_link = WebDriverWait(driver, 5).until(
         ec.element_to_be_clickable((By.LINK_TEXT, subcategory))
@@ -147,11 +171,13 @@ def get_products_from_page(driver: WebDriver) -> list[Product]:
 
 
 def parse_dynamic_page(
-    category: str,
-    subcategory: str
+        category: str,
+        subcategory: str
 ) -> list[Product]:
     driver = create_driver()
     driver.get(HOME_URL)
+
+    handle_cookies(driver)
 
     navigate_to_category(driver, category, subcategory)
     load_all_products(driver)
@@ -163,14 +189,52 @@ def parse_dynamic_page(
 
 
 def parse_static_page(url: str) -> list[Product]:
-    text = requests.get(url).text
+    try:
+        response = requests.get(url, timeout=5)
+        text = response.text
+    except requests.RequestException as e:
+        raise RuntimeError(
+            f"Failed to fetch static page '{url}': {e}"
+        ) from e
+
     soup = BeautifulSoup(text, "html.parser")
     return extract_products_from_soup(soup)
 
 
 def has_more_button(url: str) -> bool:
-    text = requests.get(url).text
-    return "ecomerce-items-scroll-more" in text
+    try:
+        response = requests.get(url, timeout=5)
+        text = response.text
+
+        if "ecomerce-items-scroll-more" in text:
+            return True
+
+    except requests.RequestException as e:
+        raise HasMoreButtonError(
+            f"Failed to fetch page '{url}' via requests: {e}"
+        ) from e
+
+    driver = create_driver()
+    try:
+        driver.get(url)
+
+        WebDriverWait(driver, 3).until(
+            ec.presence_of_element_located(
+                (By.CLASS_NAME, "ecomerce-items-scroll-more")
+            )
+        )
+        return True
+
+    except TimeoutException:
+        return False
+
+    except Exception as e:
+        raise HasMoreButtonError(
+            f"Selenium fallback failed for '{url}': {e}"
+        ) from e
+
+    finally:
+        driver.quit()
 
 
 def parse_page(page_name: str) -> list[Product]:
@@ -181,9 +245,12 @@ def parse_page(page_name: str) -> list[Product]:
     if has_more_button(url):
         print(f"> {page_name}: Selenium")
 
+        if "category" not in page or "subcategory" not in page:
+            raise ValueError(f"{page_name} missing category/subcategory")
+
         return parse_dynamic_page(
-            category=page.get("category"),
-            subcategory=page.get("subcategory"),
+            category=page["category"],
+            subcategory=page["subcategory"],
         )
     else:
         print(f"> {page_name}: requests")
@@ -191,7 +258,7 @@ def parse_page(page_name: str) -> list[Product]:
         return parse_static_page(url)
 
 
-def write_products_to_cav(path: str, products: list[Product]) -> None:
+def write_products_to_csv(path: str, products: list[Product]) -> None:
     with open(path, "w", newline="", encoding="utf-8") as _file:
         writer = csv.writer(_file)
         writer.writerow(PRODUCT_FIELDS)
@@ -201,7 +268,7 @@ def write_products_to_cav(path: str, products: list[Product]) -> None:
 def get_all_products() -> None:
     for page_name in tqdm(PAGES, desc="Parsing products"):
         products = parse_page(page_name)
-        write_products_to_cav(f"{page_name}.csv", products)
+        write_products_to_csv(f"{page_name}.csv", products)
 
 
 if __name__ == "__main__":
