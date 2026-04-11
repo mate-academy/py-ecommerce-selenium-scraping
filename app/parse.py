@@ -40,7 +40,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="[%(levelname)8s]:  %(message)s",
     handlers=[
-        logging.FileHandler("parse.log"),
         logging.StreamHandler(sys.stdout)
     ]
 )
