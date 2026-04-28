@@ -100,7 +100,7 @@ def click_all_more(driver):
         except Exception:
             break
 
-def get_products(url: str, new_driver) -> list[Product]:
+def get_products(url: str, driver) -> list[Product]:
     driver.get(url)
 
     accept_cookies(driver)
