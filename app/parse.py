@@ -16,15 +16,15 @@ HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
 COMPUTERS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers")
 LAPTOPS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/laptops")
 TABLETS_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/computers/tablets")
-PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
-
+PHONES_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones")
+TOUCH_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch")
 PAGES = {
     "home": HOME_URL,
     "computers": COMPUTERS_URL,
     "laptops": LAPTOPS_URL,
     "tablets": TABLETS_URL,
     "phones": PHONES_URL,
-    "touch": PHONES_URL,
+    "touch": TOUCH_URL,
 }
 
 
@@ -134,7 +134,7 @@ def get_all_products() -> Dict[str, List[Product]]:
     return all_data
 
 
-def write_products_to_csv(file_name: str, products: [Product]) -> None:
+def write_products_to_csv(file_name: str, products: List[Product]) -> None:
     with open(file_name, "w") as f:
         writer = csv.DictWriter(f, fieldnames=asdict(products[0]).keys())
         writer.writeheader()
