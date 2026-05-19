@@ -1,22 +1,29 @@
-from dataclasses import dataclass
-from urllib.parse import urljoin
+from selenium import webdriver
 
-
-BASE_URL = "https://webscraper.io/"
-HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
-
-
-@dataclass
-class Product:
-    title: str
-    description: str
-    price: float
-    rating: int
-    num_of_reviews: int
+from app.scrappers.computer_scrapper import (
+    get_top_computer_page_products,
+    get_laptop_products,
+    get_tablets_products
+)
+from app.scrappers.home_page_scrapper import get_home_page_products
+from app.config.parser_config import options
+from app.scrappers.phone_scrapper import (
+    get_top_phone_page_products,
+    get_phone_touch_with_pagination_products
+)
 
 
 def get_all_products() -> None:
-    pass
+    driver = webdriver.Chrome(options=options)
+    try:
+        get_home_page_products(driver)
+        get_top_computer_page_products(driver)
+        get_top_phone_page_products(driver)
+        get_phone_touch_with_pagination_products(driver)
+        get_laptop_products(driver)
+        get_tablets_products(driver)
+    finally:
+        driver.quit()
 
 
 if __name__ == "__main__":
