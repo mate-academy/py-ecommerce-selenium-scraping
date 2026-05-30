@@ -28,17 +28,39 @@ def set_driver(new_driver: WebDriver) -> None:
 class Product:
     title: str
     description: str
-    price: float
-    rating: int
-    num_of_reviews: int
-    additional_info: dict | None = None
+    price: str
+    rating: str
+    num_of_reviews: str
+    additional_info: str = ""
+
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        price: str,
+        rating: str,
+        num_of_reviews: str,
+        additional_info: dict | None = None
+    ) -> None:
+        self.title = title
+        self.description = description
+        self.price = price
+        self.rating = rating
+        self.num_of_reviews = num_of_reviews
+        if (
+            additional_info is None
+            or additional_info == "{}"
+            or additional_info == ""
+        ):
+            self.additional_info = ""
+        else:
+            self.additional_info = additional_info
 
 
 def parse_hdd_info(product_soup: Tag) -> dict[str, float]:
     absolute_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
     driver = get_driver()
     driver.get(absolute_url)
-
     time.sleep(0.5)
 
     try:
@@ -53,62 +75,60 @@ def parse_hdd_info(product_soup: Tag) -> dict[str, float]:
             driver.execute_script("arguments[0].click();", button)
             time.sleep(0.2)
             price = float(
-                driver.find_element(By.CLASS_NAME, "price")
+                driver
+                .find_element(By.CLASS_NAME, "price")
                 .text.replace("$", "")
             )
-            price = round(price, 2)
-            prices[button.get_property("value")] = float(price)
+            prices[button.get_property("value")] = round(price, 2)
     return prices
 
 
-def parse_colors(product_soup: Tag) -> dict[str, float] | list[str]:
+def parse_colors(product_soup: Tag) -> list[str]:
     absolute_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
     driver = get_driver()
     driver.get(absolute_url)
-
     time.sleep(0.5)
 
     try:
         select_element = driver.find_element(
-            By.CSS_SELECTOR,
-            ".dropdown select"
+            By.CSS_SELECTOR, ".dropdown select"
         )
         dropdown = Select(select_element)
-        colors = [
+        return [
             option.text for option in dropdown.options
             if option.get_attribute("value")
         ]
-        return colors
     except Exception:
         return []
 
 
 def parse_single_product(product: Tag, current_url: str) -> Product:
     additional_info = {}
-
     if "phones" in current_url:
         colors = parse_colors(product)
-        additional_info["colors"] = colors
+        if colors:
+            additional_info["colors"] = colors
     else:
         hdd_prices = parse_hdd_info(product)
-        additional_info["hdd_prices"] = hdd_prices
+        if hdd_prices:
+            additional_info["hdd_prices"] = hdd_prices
 
     return Product(
         title=product.select_one(".title")["title"],
         description=product.select_one(".description").text.strip(),
-        price=float(
-            product.select_one(".price")
-            .text
-            .strip()
-            .replace("$", "")
+        price=str(
+            round(float(
+                product.select_one(".price").text.strip().replace("$", "")), 2)
         ),
-        rating=len(product.select_one(".ratings").select(".ws-icon-star")),
-        num_of_reviews=int(product.select_one(".review-count span").text),
-        additional_info=additional_info,
+        rating=str(len(
+            product.select_one(".ratings").select(".ws-icon-star")
+        )),
+        num_of_reviews=str(int(product.select_one(".review-count span").text)),
+        additional_info=str(additional_info) if additional_info else "{}",
     )
 
 
-def get_all_products(link: str) -> list[Product]:
+def scrape_page_products(link: str) -> list[Product]:
     driver = get_driver()
     driver.get(link)
 
@@ -130,7 +150,6 @@ def get_all_products(link: str) -> list[Product]:
 
     soup = BeautifulSoup(driver.page_source, "html.parser")
     products_list = soup.select(".product-wrapper")
-
     return [parse_single_product(product, link) for product in products_list]
 
 
@@ -140,20 +159,11 @@ def write_products_to_csv(
 ) -> None:
     with open(output_csv_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(
-            [
-                "title",
-                "description",
-                "price",
-                "rating",
-                "num_of_reviews",
-                "additional_info",
-            ]
-        )
-        writer.writerows([astuple(quote) for quote in products])
+        writer.writerow(["title", "description", "price", "rating", "num_of_reviews"])
+        writer.writerows([astuple(prod) for prod in products])
 
 
-def parse_site() -> None:
+def get_all_products(link: str = None) -> list[Product]:
     sites_to_scrape = {
         "https://webscraper.io/test-sites/e-commerce/more":
             "home.csv",
@@ -166,21 +176,25 @@ def parse_site() -> None:
         "https://webscraper.io/test-sites/e-commerce/more/phones":
             "phones.csv",
         "https://webscraper.io/test-sites/e-commerce/more/phones/touch":
-            "touch_phones.csv",
+            "touch.csv",
     }
 
-    for url, output_csv_path in sites_to_scrape.items():
-        products = get_all_products(url)
-        write_products_to_csv(output_csv_path, products)
+    if link is None:
+        driver = webdriver.Chrome()
+        set_driver(driver)
+        try:
+            for url, output_csv_path in sites_to_scrape.items():
+                products = scrape_page_products(url)
+                write_products_to_csv(output_csv_path, products)
+        finally:
+            driver.quit()
+        return []
+
+    return scrape_page_products(link)
 
 
 def main() -> None:
-    driver = webdriver.Chrome()
-    try:
-        set_driver(driver)
-        parse_site()
-    finally:
-        driver.quit()
+    get_all_products()
 
 
 if __name__ == "__main__":
