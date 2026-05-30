@@ -57,6 +57,18 @@ class Product:
             self.additional_info = additional_info
 
 
+def accept_cookies() -> None:
+    driver = get_driver()
+    try:
+        cookie_button = driver.find_element(
+            By.CLASS_NAME, "acceptCookies"
+        )
+        cookie_button.click()
+        time.sleep(0.3)
+    except Exception:
+        pass
+
+
 def parse_hdd_info(product_soup: Tag) -> dict[str, float]:
     absolute_url = urljoin(BASE_URL, product_soup.select_one(".title")["href"])
     driver = get_driver()
@@ -159,7 +171,14 @@ def write_products_to_csv(
 ) -> None:
     with open(output_csv_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["title", "description", "price", "rating", "num_of_reviews"])
+        writer.writerow([
+            "title",
+            "description",
+            "price",
+            "rating",
+            "num_of_reviews",
+            "additional_info",
+        ])
         writer.writerows([astuple(prod) for prod in products])
 
 
@@ -182,6 +201,10 @@ def get_all_products(link: str = None) -> list[Product]:
     if link is None:
         driver = webdriver.Chrome()
         set_driver(driver)
+
+        driver.get(HOME_URL)
+        accept_cookies()
+
         try:
             for url, output_csv_path in sites_to_scrape.items():
                 products = scrape_page_products(url)
