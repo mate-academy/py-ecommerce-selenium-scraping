@@ -1,5 +1,4 @@
 import csv
-import datetime
 import time
 from dataclasses import dataclass, astuple
 from urllib.parse import urljoin
@@ -176,14 +175,12 @@ def parse_site() -> None:
 
 
 def main() -> None:
-    timme = datetime.datetime.now()
     driver = webdriver.Chrome()
     try:
         set_driver(driver)
         parse_site()
     finally:
         driver.quit()
-    print({"time": datetime.datetime.now() - timme})
 
 
 if __name__ == "__main__":
