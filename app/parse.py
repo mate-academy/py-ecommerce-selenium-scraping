@@ -1,15 +1,64 @@
 import csv
-from dataclasses import fields, astuple
+from dataclasses import fields, astuple, dataclass
+from urllib.parse import urljoin
 
-from app.models import Product
-from app.parse_computers import get_computers_products
-from app.parse_home import get_home_products
-from app.parse_laptops import get_laptops_products
-from app.parse_phones import get_phones_products
-from app.parse_tablets import get_tablets_products
-from app.parse_touch import get_touch_products
+from bs4 import Tag, BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.webdriver import WebDriver
+
+from app.utils import close_cookies_banner, click_show_more_until_gone
+
+BASE_URL = "https://webscraper.io/"
+HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
+
+
+@dataclass
+class Product:
+    title: str
+    description: str
+    price: float
+    rating: int
+    num_of_reviews: int
+
 
 PRODUCT_FIELDS = [field.name for field in fields(Product)]
+
+PAGES = {
+    "home": HOME_URL,
+    "computers": urljoin(BASE_URL, "test-sites/e-commerce/more/computers"),
+    "laptops": urljoin(
+        BASE_URL,
+        "test-sites/e-commerce/more/computers/laptops"
+    ),
+    "tablets": urljoin(
+        BASE_URL,
+        "test-sites/e-commerce/more/computers/tablets"
+    ),
+    "phones": urljoin(BASE_URL, "test-sites/e-commerce/more/phones"),
+    "touch": urljoin(BASE_URL, "test-sites/e-commerce/more/phones/touch"),
+}
+
+
+def parse_product(product: Tag) -> Product:
+    return Product(
+        title=product.select_one(".title")["title"],
+        description=product.select_one(
+            ".description"
+        ).text.replace("\xa0", " "),
+        price=float(product.select_one(".price").text.replace("$", "")),
+        rating=len(product.select(".ws-icon.ws-icon-star")),
+        num_of_reviews=int(product.select_one(".review-count").text.split()[0])
+    )
+
+
+def get_products_by_url(driver: WebDriver, url: str) -> list[Product]:
+    driver.get(url)
+    click_show_more_until_gone(driver)
+
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    products = soup.select(".card-body")
+
+    return [parse_product(product) for product in products]
 
 
 def write_products_to_csv(
@@ -23,12 +72,13 @@ def write_products_to_csv(
 
 
 def get_all_products() -> None:
-    write_products_to_csv(get_home_products(), "home.csv")
-    write_products_to_csv(get_computers_products(), "computers.csv")
-    write_products_to_csv(get_laptops_products(), "laptops.csv")
-    write_products_to_csv(get_tablets_products(), "tablets.csv")
-    write_products_to_csv(get_phones_products(), "phones.csv")
-    write_products_to_csv(get_touch_products(), "touch.csv")
+    with webdriver.Chrome() as driver:
+        driver.get(HOME_URL)
+        close_cookies_banner(driver)
+
+        for page_name, url in PAGES.items():
+            products = get_products_by_url(driver, url)
+            write_products_to_csv(products, f"{page_name}.csv")
 
 
 if __name__ == "__main__":
