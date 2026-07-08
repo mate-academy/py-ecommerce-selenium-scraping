@@ -4,6 +4,7 @@ from time import sleep
 from urllib.parse import urljoin
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
@@ -42,6 +43,19 @@ PAGES = {
 
 def clean_text(text: str) -> str:
     return " ".join(text.replace("\xa0", " ").split())
+
+
+def accept_cookies(driver: webdriver.Chrome) -> None:
+    try:
+        button = WebDriverWait(driver, 3).until(
+            lambda page: page.find_element(
+                By.CSS_SELECTOR,
+                ".t-acceptAllButton",
+            ),
+        )
+        button.click()
+    except TimeoutException:
+        pass
 
 
 def click_more_until_all_products_loaded(driver: webdriver.Chrome) -> None:
@@ -83,6 +97,7 @@ def get_products_from_page(
     url: str,
 ) -> list[Product]:
     driver.get(url)
+    accept_cookies(driver)
 
     WebDriverWait(driver, 10).until(
         lambda page: page.find_elements(By.CSS_SELECTOR, ".card.thumbnail")
