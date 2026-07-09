@@ -1,6 +1,13 @@
-from dataclasses import dataclass
+import csv
+from dataclasses import astuple, dataclass
+from time import sleep
 from urllib.parse import urljoin
 
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.ui import WebDriverWait
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -15,8 +22,158 @@ class Product:
     num_of_reviews: int
 
 
+FIELD_NAMES = [
+    "title",
+    "description",
+    "price",
+    "rating",
+    "num_of_reviews",
+]
+
+PRODUCT_CARD_SELECTOR = ".card.thumbnail"
+
+PAGES = {
+    "home": HOME_URL,
+    "computers": urljoin(HOME_URL, "computers"),
+    "laptops": urljoin(HOME_URL, "computers/laptops"),
+    "tablets": urljoin(HOME_URL, "computers/tablets"),
+    "phones": urljoin(HOME_URL, "phones"),
+    "touch": urljoin(HOME_URL, "phones/touch"),
+}
+
+
+def clean_text(text: str) -> str:
+    text = text.replace("\xa0", " ")
+    return " ".join(text.split())
+
+
+def accept_cookies(driver: webdriver.Chrome) -> None:
+    try:
+        button = WebDriverWait(driver, 3).until(
+            lambda page: page.find_element(
+                By.CSS_SELECTOR,
+                ".t-acceptAllButton",
+            ),
+        )
+        button.click()
+    except TimeoutException:
+        pass
+
+
+def click_more_until_all_products_loaded(
+    driver: webdriver.Chrome,
+) -> None:
+    while True:
+        button = driver.find_elements(
+            By.CSS_SELECTOR,
+            ".ecomerce-items-scroll-more",
+        )
+
+        if len(button) == 0 or not button[0].is_displayed():
+            break
+
+        driver.execute_script("arguments[0].click();", button[0])
+        sleep(0.3)
+
+
+def parse_product(product_card: WebElement) -> Product:
+    reviews = product_card.find_element(
+        By.CSS_SELECTOR,
+        "[itemprop='reviewCount']",
+    )
+    stars = product_card.find_elements(
+        By.CSS_SELECTOR,
+        ".ws-icon-star",
+    )
+    title = product_card.find_element(
+        By.CSS_SELECTOR,
+        ".title",
+    )
+    description = product_card.find_element(
+        By.CSS_SELECTOR,
+        ".description",
+    )
+    price = product_card.find_element(
+        By.CSS_SELECTOR,
+        ".price",
+    )
+
+    return Product(
+        title=clean_text(title.get_attribute("title")),
+        description=clean_text(description.text),
+        price=float(clean_text(price.text).replace("$", "")),
+        rating=len(stars),
+        num_of_reviews=int(reviews.text),
+    )
+
+
+def get_products_from_page(
+    driver: webdriver.Chrome,
+    url: str,
+) -> list[Product]:
+    driver.get(url)
+    accept_cookies(driver)
+
+    WebDriverWait(driver, 10).until(
+        lambda page: (
+            page.find_elements(
+                By.CSS_SELECTOR,
+                PRODUCT_CARD_SELECTOR,
+            )
+            or page.find_elements(
+                By.CSS_SELECTOR,
+                ".ecomerce-items-scroll-more",
+            )
+        ),
+    )
+
+    click_more_until_all_products_loaded(driver)
+
+    product_cards = driver.find_elements(
+        By.CSS_SELECTOR,
+        PRODUCT_CARD_SELECTOR,
+    )
+
+    products = []
+
+    for card in product_cards:
+        products.append(parse_product(card))
+
+    return products
+
+
+def write_products_to_csv(
+    file_name: str,
+    products: list[Product],
+) -> None:
+    with open(
+        file_name,
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as file:
+        writer = csv.writer(file)
+        writer.writerow(FIELD_NAMES)
+
+        for product in products:
+            writer.writerow(astuple(product))
+
+
 def get_all_products() -> None:
-    pass
+    driver = webdriver.Chrome()
+
+    try:
+        for page_name in PAGES:
+            products = get_products_from_page(
+                driver,
+                PAGES[page_name],
+            )
+            write_products_to_csv(
+                f"{page_name}.csv",
+                products,
+            )
+    finally:
+        driver.quit()
 
 
 if __name__ == "__main__":
