@@ -32,6 +32,7 @@ FIELDS = [field.name for field in fields(Product)]
 
 def get_all_links(driver: webdriver.Chrome) -> dict[str, str]:
     driver.get(HOME_URL)
+    accept_cookies(driver)
     urls_dict = {"home": HOME_URL}
 
     menu_items_count = len(
@@ -68,7 +69,7 @@ def parse_page(driver: webdriver.Chrome, url: str) -> list[Product]:
     products = []
     driver.get(url)
 
-    wait = WebDriverWait(driver, 2)
+    wait = WebDriverWait(driver, 1)
     while True:
         try:
             more = wait.until(
@@ -94,6 +95,16 @@ def write_to_csv(filename: str, items: list[Product]) -> None:
         writer.writerow(FIELDS)
         for item in items:
             writer.writerow(astuple(item))
+
+
+def accept_cookies(driver: webdriver.Chrome) -> None:
+    try:
+        cookies = driver.find_element(
+            By.CSS_SELECTOR, ".acceptCookies"
+        )
+        cookies.click()
+    except NoSuchElementException:
+        pass
 
 
 def get_all_products() -> None:
