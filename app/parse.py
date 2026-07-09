@@ -32,7 +32,6 @@ FIELDS = [field.name for field in fields(Product)]
 
 def get_all_links(driver: webdriver.Chrome) -> dict[str, str]:
     driver.get(HOME_URL)
-    accept_cookies(driver)
     urls_dict = {"home": HOME_URL}
 
     menu_items_count = len(
@@ -68,7 +67,7 @@ def parse_item(card: WebElement) -> Product:
 def parse_page(driver: webdriver.Chrome, url: str) -> list[Product]:
     products = []
     driver.get(url)
-
+    accept_cookies(driver)
     wait = WebDriverWait(driver, 1)
     while True:
         try:
