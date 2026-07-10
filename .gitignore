@@ -1,9 +1,11 @@
+.venv/
+venv/
+.env
 .idea/
 .vscode/
 *.iml
-.env
 .DS_Store
-venv/
 .pytest_cache/
-**__pycache__/
-**.csv
+__pycache__/
+*.pyc
+*.csv
