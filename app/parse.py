@@ -1,7 +1,6 @@
 import csv
 import time
 from dataclasses import astuple, fields, dataclass
-from pathlib import Path
 from urllib.parse import urljoin
 
 from selenium import webdriver
@@ -55,7 +54,9 @@ def accept_cookies_if_present(driver: webdriver.Chrome) -> None:
             EC.element_to_be_clickable(
                 (
                     By.CSS_SELECTOR,
-                    "button.acceptCookies, button#cookieBannerAccept, .acceptCookies",
+                    "button.acceptCookies, "
+                    "button#cookieBannerAccept, "
+                    ".acceptCookies",
                 )
             )
         )
@@ -71,7 +72,9 @@ def click_more_until_end(driver: webdriver.Chrome) -> None:
 
     while True:
         try:
-            products_before = len(driver.find_elements(By.CSS_SELECTOR, ".thumbnail"))
+            products_before = len(
+                driver.find_elements(By.CSS_SELECTOR,
+               ".thumbnail"))
 
             more_button = wait.until(
                 EC.element_to_be_clickable(
