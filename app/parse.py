@@ -1,10 +1,19 @@
 from dataclasses import dataclass
 import csv
-import html
-import json
 import re
 from urllib.parse import urljoin
-from urllib.request import urlopen
+
+from selenium import webdriver
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    TimeoutException,
+)
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 BASE_URL = "https://webscraper.io/"
@@ -17,6 +26,7 @@ PAGES = {
     "phones": urljoin(HOME_URL, "phones"),
     "touch": urljoin(HOME_URL, "phones/touch"),
 }
+WAIT_TIME = 10
 
 
 @dataclass
@@ -28,46 +38,120 @@ class Product:
     num_of_reviews: int
 
 
-def get_page_html(url: str) -> str:
-    with urlopen(url) as response:
-        return response.read().decode("utf-8")
-
-
-def parse_js_base36(value: str) -> int:
-    match = re.search(r"[+-]?[0-9a-zA-Z]+", value.strip())
-
-    if match is None:
-        return 0
-
-    return int(match.group(), 36)
-
-
-def get_num_of_reviews(title: str) -> int:
-    return round(parse_js_base36(title)) % 15
-
-
 def normalize_text(value: str) -> str:
     return value.replace("\xa0", " ")
 
 
-def parse_products(url: str) -> list[Product]:
-    page_html = get_page_html(url)
-    match = re.search(r"data-items='([^']*)'", page_html)
+def get_driver() -> WebDriver:
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1920,1080")
+
+    return webdriver.Chrome(options=options)
+
+
+def accept_cookies(driver: WebDriver) -> None:
+    selectors = [
+        "button[data-testid='uc-accept-all-button']",
+        "button#onetrust-accept-btn-handler",
+        "button[aria-label='Accept cookies']",
+    ]
+
+    for selector in selectors:
+        buttons = driver.find_elements(By.CSS_SELECTOR, selector)
+
+        if buttons:
+            buttons[0].click()
+            return
+
+    buttons = driver.find_elements(
+        By.XPATH,
+        "//button[contains(., 'Accept') or contains(., 'accept')]",
+    )
+
+    if buttons:
+        buttons[0].click()
+
+
+def load_all_products(driver: WebDriver) -> None:
+    wait = WebDriverWait(driver, WAIT_TIME)
+    wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".thumbnail")))
+
+    while True:
+        buttons = driver.find_elements(
+            By.CSS_SELECTOR,
+            ".ecomerce-items-scroll-more",
+        )
+
+        if not buttons or not buttons[0].is_displayed():
+            return
+
+        current_count = len(get_product_cards(driver))
+        driver.execute_script("arguments[0].scrollIntoView();", buttons[0])
+
+        try:
+            buttons[0].click()
+        except ElementClickInterceptedException:
+            driver.execute_script("arguments[0].click();", buttons[0])
+
+        try:
+            wait.until(
+                lambda browser: len(get_product_cards(browser)) > current_count
+            )
+        except TimeoutException:
+            if not buttons[0].is_displayed():
+                return
+
+
+def get_product_cards(driver: WebDriver) -> list[WebElement]:
+    return driver.find_elements(By.CSS_SELECTOR, ".thumbnail")
+
+
+def parse_price(card: WebElement) -> float:
+    price = card.find_element(By.CSS_SELECTOR, ".price").text
+    return float(price.replace("$", ""))
+
+
+def parse_rating(card: WebElement) -> int:
+    return len(card.find_elements(By.CSS_SELECTOR, ".ratings .ws-icon-star"))
+
+
+def parse_num_of_reviews(card: WebElement) -> int:
+    review_count = card.find_element(By.CSS_SELECTOR, ".review-count").text
+    match = re.search(r"\d+", review_count)
 
     if match is None:
-        return []
+        return 0
 
-    items = json.loads(html.unescape(match.group(1)))
+    return int(match.group())
+
+
+def parse_product_card(card: WebElement) -> Product:
+    title = card.find_element(By.CSS_SELECTOR, ".title").get_attribute("title")
+
+    if title is None:
+        title = card.find_element(By.CSS_SELECTOR, ".title").text
+
+    return Product(
+        title=normalize_text(title),
+        description=normalize_text(
+            card.find_element(By.CSS_SELECTOR, ".description").text
+        ),
+        price=parse_price(card),
+        rating=parse_rating(card),
+        num_of_reviews=parse_num_of_reviews(card),
+    )
+
+
+def parse_products(driver: WebDriver, url: str) -> list[Product]:
+    driver.get(url)
+    accept_cookies(driver)
+    load_all_products(driver)
 
     return [
-        Product(
-            title=normalize_text(item["title"]),
-            description=normalize_text(item["description"]),
-            price=float(item["price"]),
-            rating=5,
-            num_of_reviews=get_num_of_reviews(item["title"]),
-        )
-        for item in items
+        parse_product_card(card)
+        for card in get_product_cards(driver)
     ]
 
 
@@ -96,8 +180,16 @@ def write_products_to_csv(path: str, products: list[Product]) -> None:
 
 
 def get_all_products() -> None:
-    for page_name, url in PAGES.items():
-        write_products_to_csv(f"{page_name}.csv", parse_products(url))
+    driver = get_driver()
+
+    try:
+        for page_name, url in PAGES.items():
+            write_products_to_csv(
+                f"{page_name}.csv",
+                parse_products(driver, url),
+            )
+    finally:
+        driver.quit()
 
 
 if __name__ == "__main__":
