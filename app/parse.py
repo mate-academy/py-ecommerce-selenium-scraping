@@ -108,6 +108,7 @@ def click_show_more_if_present(driver: WebDriver) -> None:
 
 def parse_single_page(driver: WebDriver, url: str) -> list[Product]:
     driver.get(url)
+    accept_cookies_if_needed(driver)
     click_show_more_if_present(driver)
 
     product_elements = driver.find_elements(By.CLASS_NAME, "thumbnail")
@@ -129,9 +130,6 @@ def get_all_products() -> None:
     options.add_argument("--headless=new")
 
     with webdriver.Chrome(options=options) as driver:
-        driver.get(HOME_URL)
-        accept_cookies_if_needed(driver)
-
         for page_name, page_url in tqdm(
             URLS.items(), desc="Scraping pages", unit="page"
         ):
