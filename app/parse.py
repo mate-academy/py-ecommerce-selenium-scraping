@@ -12,6 +12,7 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
+from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more")
@@ -147,7 +148,12 @@ def get_page_products(url: str) -> list[Product]:
     accept_cookies(driver)
     load_all_products(driver)
     soup = BeautifulSoup(driver.page_source, "html.parser")
-    return [parse_single_product(card) for card in soup.select(".card-body")]
+    return [
+        parse_single_product(card) for card in tqdm(
+            soup.select(".card-body"),
+            desc="Parsing"
+        )
+    ]
 
 
 def write_products_to_csv(products: list[Product], filename: str) -> None:
