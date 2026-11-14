@@ -94,16 +94,37 @@ def load_all_products(driver: WebDriver, page_name: str) -> None:
                         StaleElementReferenceException,
                     ):
                         time.sleep(0.5)
+                        try:
+                            more_btn = driver.find_element(
+                                By.CLASS_NAME, "ecomerce-items-scroll-more"
+                            )
+                            driver.execute_script(
+                                "arguments[0].scrollIntoView({block: 'center'});", more_btn
+                            )
+                        except Exception:
+                            pass
+
+                if not clicked:
+                    for _ in range(retries):
+                        try:
+                            more_btn = driver.find_element(
+                                By.CLASS_NAME, "ecomerce-items-scroll-more"
+                            )
+                            driver.execute_script("arguments[0].click();", more_btn)
+                            clicked = True
+                            break
+                        except Exception:
+                            time.sleep(0.5)
+
+                if not clicked:
+                    time.sleep(1)
+                    try:
                         more_btn = driver.find_element(
                             By.CLASS_NAME, "ecomerce-items-scroll-more"
                         )
-                        driver.execute_script(
-                            "arguments[0].scrollIntoView({block: 'center'});", more_btn
-                        )
-
-                if not clicked:
-                    try:
-                        driver.execute_script("arguments[0].click();", more_btn)
+                        if not more_btn.is_displayed():
+                            break
+                        continue
                     except Exception:
                         break
 
