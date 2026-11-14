@@ -68,27 +68,49 @@ def load_all_products(driver: WebDriver, page_name: str) -> None:
     ) as pbar:
         while True:
             try:
-                more_btn = WebDriverWait(driver, 2).until(
+                more_btn = WebDriverWait(driver, 3).until(
                     EC.presence_of_element_located(
                         (By.CLASS_NAME, "ecomerce-items-scroll-more")
                     )
                 )
+
                 if not more_btn.is_displayed():
                     break
 
                 driver.execute_script(
                     "arguments[0].scrollIntoView({block: 'center'});", more_btn
                 )
-                time.sleep(0.2)
-                more_btn.click()
+                time.sleep(0.3)
+
+                retries = 3
+                clicked = False
+                for _ in range(retries):
+                    try:
+                        more_btn.click()
+                        clicked = True
+                        break
+                    except (
+                        ElementClickInterceptedException,
+                        StaleElementReferenceException,
+                    ):
+                        time.sleep(0.5)
+                        more_btn = driver.find_element(
+                            By.CLASS_NAME, "ecomerce-items-scroll-more"
+                        )
+                        driver.execute_script(
+                            "arguments[0].scrollIntoView({block: 'center'});", more_btn
+                        )
+
+                if not clicked:
+                    try:
+                        driver.execute_script("arguments[0].click();", more_btn)
+                    except Exception:
+                        break
+
                 pbar.update(1)
-                time.sleep(0.3)  # Wait for AJAX to append elements
-            except (
-                TimeoutException,
-                NoSuchElementException,
-                ElementClickInterceptedException,
-                StaleElementReferenceException,
-            ):
+                time.sleep(0.5)
+
+            except (TimeoutException, NoSuchElementException):
                 break
 
 
