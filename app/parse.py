@@ -7,7 +7,8 @@ from selenium import webdriver
 import requests
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import (ElementNotInteractableException,
-                                        ElementClickInterceptedException)
+                                        ElementClickInterceptedException,
+                                        NoSuchElementException)
 from selenium.webdriver.common.by import By
 
 BASE_URL = "https://webscraper.io/"
@@ -27,8 +28,7 @@ class Product:
 FIELDS_NAME = [field.name for field in fields(Product)]
 
 
-def get_home_page() -> list:
-    response = requests.get(HOME_URL).content
+def get_page(response: str) -> list:
     soup = BeautifulSoup(response, "html.parser")
     pages = soup.select(".col-md-4")
     result = []
@@ -43,32 +43,6 @@ def get_home_page() -> list:
                     'span[itemprop="price"]'
                 ).text.replace("$", "")),
                 rating=int(page.select_one("p[data-rating]")["data-rating"]),
-                num_of_reviews=int(page.select_one(
-                    'span[itemprop="reviewCount"]'
-                ).text)
-            )
-        )
-    return result
-
-
-def get_computers_page() -> list:
-    response = requests.get(COMPUTERS_URL).content
-    soup = BeautifulSoup(response, "html.parser")
-    pages = soup.select(".col-md-4")
-    result = []
-    for page in pages:
-        result.append(
-            Product(
-                title=page.select_one(".title")["title"],
-                description=page.select_one(
-                    ".description"
-                ).text.replace("\xa0", " "),
-                price=float(page.select_one(
-                    'span[itemprop="price"]'
-                ).text.replace("$", "")),
-                rating=int(page.select_one(
-                    "p[data-rating]"
-                )["data-rating"]),
                 num_of_reviews=int(page.select_one(
                     'span[itemprop="reviewCount"]'
                 ).text)
@@ -118,7 +92,8 @@ def get_selenium_page(url: str) -> list | None:
                 time.sleep(0.5)
                 buttons.click()
             except (ElementNotInteractableException,
-                    ElementClickInterceptedException):
+                    ElementClickInterceptedException,
+                    NoSuchElementException):
                 break
     else:
         return
@@ -148,15 +123,17 @@ def get_selenium_page(url: str) -> list | None:
 
 def write_in_file() -> None:
     with open("home.csv", "w", newline="") as file:
+        response = requests.get(HOME_URL).content
         writer = csv.writer(file)
         writer.writerow(FIELDS_NAME)
-        result = get_home_page()
+        result = get_page(response)
         writer.writerows([astuple(i) for i in result])
 
     with open("computers.csv", "w", newline="") as file:
+        response = requests.get(COMPUTERS_URL).content
         writer = csv.writer(file)
         writer.writerow(FIELDS_NAME)
-        result = get_computers_page()
+        result = get_page(response)
         writer.writerows([astuple(i) for i in result])
 
     with open("laptops.csv", "w", newline="") as file:
