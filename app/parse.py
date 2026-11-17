@@ -138,12 +138,7 @@ def scrape_page(url: str, filename: str) -> None:
                 )
             )
 
-            reviews = product_card.find_element(
-                By.CSS_SELECTOR,
-                ".review-count"
-            )
-
-            reviews_value = int(reviews.text.split()[0])
+            reviews_value = int(rating.text.split()[0])
 
             product = Product(
                 title=title.get_attribute("title"),
