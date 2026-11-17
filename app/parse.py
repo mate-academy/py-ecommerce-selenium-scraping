@@ -24,8 +24,9 @@ OUTPUT_DIR = Path.cwd()
 PRODUCT_SELECTOR = ".thumbnail"
 
 MORE_BUTTON_XPATH = (
-    "//a[contains(normalize-space(.), 'More')]"
-    " | //button[contains(normalize-space(.), 'More')]"
+    "//a[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'more')]"
+    " | "
+    "//button[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'more')]"
 )
 
 PAGES = {
