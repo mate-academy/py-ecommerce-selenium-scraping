@@ -32,6 +32,10 @@ MORE_BUTTON_SELECTOR = ".ecomerce-items-scroll-more"
 
 @dataclass
 class Product:
+    title: str
+    description: str
+    price: float
+    rating: int
     num_of_reviews: int
 
 
