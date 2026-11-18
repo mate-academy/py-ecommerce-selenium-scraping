@@ -1,5 +1,4 @@
 import csv
-import time
 from dataclasses import astuple, dataclass, fields
 from urllib.parse import urljoin
 
@@ -71,12 +70,22 @@ def load_all_products(driver: webdriver.Chrome) -> None:
             return
         if not more_button.is_displayed():
             return
+        current_count = len(
+            driver.find_elements(By.CLASS_NAME, "product-wrapper")
+        )
         try:
             more_button.click()
         except ElementClickInterceptedException:
             accept_cookies(driver)
             continue
-        time.sleep(0.2)
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda driver_: len(
+                    driver_.find_elements(By.CLASS_NAME, "product-wrapper")
+                ) > current_count
+            )
+        except TimeoutException:
+            return
 
 
 def parse_single_product(product: WebElement) -> Product:
