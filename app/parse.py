@@ -1,5 +1,6 @@
 import csv
 import os
+import re
 import time
 from dataclasses import dataclass
 from typing import List
@@ -27,7 +28,7 @@ PAGES = {
     "touch": "phones/touch",
 }
 
-CARD_SELECTOR = ".card.thumbnail"
+CARD_SELECTOR = ".thumbnail"
 MORE_BUTTON_SELECTOR = ".ecomerce-items-scroll-more"
 FIELDNAMES = ["title", "description", "price", "rating", "num_of_reviews"]
 
@@ -111,10 +112,10 @@ def _parse_product(card: WebElement) -> Product:
     )
     price_text = card.find_element(By.CSS_SELECTOR, ".price").text
     price = float(price_text.replace("$", "").strip())
-    num_reviews = int(
-        card.find_element(By.CSS_SELECTOR, "[itemprop='reviewCount']")
-        .text.strip()
-    )
+    review_count_text = card.find_element(
+        By.CSS_SELECTOR, ".ratings .review-count"
+    ).text
+    num_reviews = int(re.search(r"\d+", review_count_text).group())
 
     rating_parents = card.find_elements(
         By.CSS_SELECTOR, ".ratings p[data-rating]"
