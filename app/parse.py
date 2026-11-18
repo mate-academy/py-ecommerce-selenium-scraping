@@ -62,17 +62,14 @@ def load_all_items(driver: WebDriver) -> None:
     while True:
         buttons = driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")
         if not buttons or not buttons[0].is_displayed():
-            break
+            return
 
         cards_count = len(driver.find_elements(By.CSS_SELECTOR, CARDS_SELECTOR))
         driver.execute_script("arguments[0].click();", buttons[0])
 
-        try:
-            WebDriverWait(driver, 5).until(
-                lambda d: len(d.find_elements(By.CSS_SELECTOR, CARDS_SELECTOR)) > cards_count
-            )
-        except TimeoutException:
-            break
+        WebDriverWait(driver, 10).until(
+            lambda d: len(d.find_elements(By.CSS_SELECTOR, CARDS_SELECTOR)) > cards_count,
+        )
 
 
 def get_soup(url: str) -> BeautifulSoup:
