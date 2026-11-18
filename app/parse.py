@@ -6,9 +6,11 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
+from selenium.common import TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 from tqdm import tqdm
 
 BASE_URL = "https://webscraper.io/"
@@ -61,8 +63,16 @@ def load_all_items(driver: WebDriver) -> None:
         buttons = driver.find_elements(By.CLASS_NAME, "ecomerce-items-scroll-more")
         if not buttons or not buttons[0].is_displayed():
             break
+
+        cards_count = len(driver.find_elements(By.CSS_SELECTOR, CARDS_SELECTOR))
         driver.execute_script("arguments[0].click();", buttons[0])
-        time.sleep(0.5)
+
+        try:
+            WebDriverWait(driver, 5).until(
+                lambda d: len(d.find_elements(By.CSS_SELECTOR, CARDS_SELECTOR)) > cards_count
+            )
+        except TimeoutException:
+            break
 
 
 def get_soup(url: str) -> BeautifulSoup:
