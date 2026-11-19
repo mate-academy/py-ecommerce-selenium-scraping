@@ -2,7 +2,7 @@ import csv
 from dataclasses import dataclass
 from urllib.parse import urljoin
 from selenium import webdriver
-from selenium.common import TimeoutException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
