@@ -79,7 +79,7 @@ def get_all_products() -> None:
                     price = float(
                         card.find_element(
                             By.CLASS_NAME, "price"
-                        ).text.replace("$", "")
+                        ).text.replace("$", "").replace(",", "").strip()
                     )
 
                     rating = len(
