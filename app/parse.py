@@ -44,19 +44,18 @@ def click_accept_cookie() -> None:
 def get_product(url: str) -> list[Product]:
     driver.get(url)
 
-    try:
-        more_button = driver.find_element(
+    while True:
+        more_button = driver.find_elements(
             By.CLASS_NAME, "ecomerce-items-scroll-more"
         )
-        while more_button.is_displayed():
-            driver.execute_script(
-                "arguments[0].scrollIntoView({block: 'center'});",
-                more_button
-            )
-            more_button.click()
-            time.sleep(1)
-    except NoSuchElementException:
-        pass
+        if not more_button or not more_button[0].is_displayed():
+            break
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            more_button[0]
+        )
+        more_button[0].click()
+        time.sleep(1)
 
     elements = driver.find_elements(By.CLASS_NAME, "card-body")
     result = []
