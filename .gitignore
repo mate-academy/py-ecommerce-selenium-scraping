@@ -4,6 +4,7 @@
 .env
 .DS_Store
 venv/
+.chrome/
 .pytest_cache/
 **__pycache__/
 **.csv
