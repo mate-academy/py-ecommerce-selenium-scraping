@@ -144,7 +144,9 @@ def _parse_product(card: WebElement) -> Product:
         By.CSS_SELECTOR, ".description"
     ).text
     price_text = card.find_element(By.CSS_SELECTOR, ".price").text
-    price = float(price_text.replace("$", "").strip())
+    price = float(
+        price_text.replace("$", "").replace(",", "").strip()
+    )
     rating_elements = card.find_elements(By.CSS_SELECTOR, "[data-rating]")
     if rating_elements:
         rating = int(rating_elements[0].get_attribute("data-rating"))
@@ -153,7 +155,7 @@ def _parse_product(card: WebElement) -> Product:
             card.find_elements(By.CSS_SELECTOR, ".ws-icon-star")
         )
     reviews_text = card.find_element(
-        By.CSS_SELECTOR, ".review-count"
+        By.CSS_SELECTOR, ".ratings .pull-right"
     ).text
     num_of_reviews = int(reviews_text.split()[0])
     return Product(
